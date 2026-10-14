@@ -228,8 +228,8 @@ pre.out{background:var(--term-bg);color:var(--term-fg)}
     <div class="btns">
       <button class="btn btn-no" id="againBtn" type="button">Nur diese nochmal üben</button>
       <button class="btn btn-main" id="nextBtn" type="button">Nächste Runde</button>
-      <button class="btn btn-main" id="moreNewBtn" type="button" hidden>5 neue Karten extra</button>
-      <button class="btn btn-ghost" id="extraBtn" type="button" hidden>Trotzdem wiederholen</button>
+      <button class="btn btn-main" id="moreNewBtn" type="button" hidden>Weiter lernen</button>
+      <button class="btn btn-ghost" id="extraBtn" type="button" hidden>Wiederholen</button>
     </div>
   </section>
 </div>
@@ -502,7 +502,8 @@ const fromIso=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||"");return m?Date.
 const WD=["Mo","Di","Mi","Do","Fr","Sa","So"];
 const MONTHS=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 const DEFAULT_TARGET=Date.UTC(2027,0,4)/86400000;
-const BUFFER=14; /* so viele Tage vor dem Ziel sind alle Karten neu gelernt, danach nur noch wiederholen */
+const DAILY=20;    /* Karten pro Tag: zuerst Wiederholungen, dann neue */
+const MAXCATCH=20; /* höchstens so viele Karten pro Tag zusätzlich zum Nachholen */
 
 /* ---------- Wiederholungsplan wie bei Anki (vereinfacht) ---------- */
 const INTERVALS=[1,3,7,14,30,60,120];
@@ -531,30 +532,27 @@ const dayWord=n=>n===1?"morgen":n<30?"in "+n+" Tagen":n<60?"in 1 Monat":"in "+Ma
    hat am nächsten Tag automatisch mehr neue Karten im Ziel (nachholen). */
 function makePlan(target){S.plan={start:today(),target:target||DEFAULT_TARGET,base:Math.max(0,learned()-((S.log[today()]||{}).n||0))}}
 if(!S.plan||!S.plan.target)makePlan(DEFAULT_TARGET);
-const lastNewDay=()=>Math.max(S.plan.start,S.plan.target-BUFFER);
-function perDay(){const days=lastNewDay()-S.plan.start+1;return Math.max(1,Math.ceil((TOTAL-S.plan.base)/Math.max(1,days)))}
-function soll(t){if(t>=lastNewDay())return TOTAL;return Math.min(TOTAL,S.plan.base+perDay()*(t-S.plan.start+1))}
+if(S.day&&S.day.goal===undefined)S.day=null;
+const cnt=lg=>lg?(lg.c!==undefined?lg.c:(lg.n||0)+(lg.r||0)):0;
 const dueAll=()=>CARDS.filter(isDue);
+/* Rückstand: 20 Karten je Tag seit Planstart, minus was du wirklich gemacht hast. */
+function debtBefore(t){let soll=0,ist=0;for(let d=S.plan.start;d<t;d++){soll+=DAILY;ist+=cnt(S.log[d])}return Math.max(0,soll-ist)}
 function ensureDay(){
   const t=today();
-  if(S.day&&S.day.d===t)return;
+  if(S.day&&S.day.d===t&&S.day.goal!==undefined)return;
   const lg=S.log[t]||{n:0,r:0};
-  const before=learned()-(lg.n||0);
-  const goalNew=Math.max(0,Math.min(TOTAL-before,soll(t)-before));
-  S.day={d:t,newGoal:goalNew,catchUp:Math.max(0,goalNew-perDay()),dueStart:dueAll().length+(lg.r||0)};
-  S.log[t]=Object.assign({n:0,r:0},lg,{g:goalNew+S.day.dueStart});
+  if(lg.c===undefined)lg.c=(lg.n||0)+(lg.r||0);
+  const catchUp=Math.min(MAXCATCH,debtBefore(t));
+  S.day={d:t,goal:DAILY+catchUp,catchUp};
+  S.log[t]=Object.assign(lg,{g:S.day.goal});
+  if(lg.ok&&cnt(lg)<S.day.goal)lg.ok=false;
 }
 function goalState(){
   ensureDay();
-  const lg=S.log[S.day.d];
-  const dueNow=dueAll().length;
-  const total=S.day.newGoal+S.day.dueStart;
-  const doneNew=Math.min(S.day.newGoal,lg.n||0);
-  const doneRev=Math.max(0,Math.min(S.day.dueStart,S.day.dueStart-dueNow));
-  const met=(lg.n||0)>=S.day.newGoal&&dueNow===0;
-  return {total,done:met?total:Math.min(total,doneNew+doneRev),met,newLeft:Math.max(0,S.day.newGoal-(lg.n||0)),dueNow};
+  const lg=S.log[S.day.d],done=cnt(lg),total=S.day.goal;
+  return {total,done:Math.min(total,done),met:done>=total,left:Math.max(0,total-done),dueNow:dueAll().length,newAvail:newCards().length};
 }
-function logAct(kind){const t=today();ensureDay();const lg=S.log[t];lg[kind]=(lg[kind]||0)+1}
+function logAct(kind){const t=today();ensureDay();const lg=S.log[t];lg[kind]=(lg[kind]||0)+1;lg.c=(lg.c||0)+1}
 function streak(){let n=0,t=today();if(!(S.log[t]&&S.log[t].ok))t--;while(S.log[t]&&S.log[t].ok){n++;t--}return n}
 
 /* ---------- Speichern im Claude-Konto, falls die Seite dort läuft ---------- */
@@ -610,8 +608,8 @@ function renderHead(){
   const g=goalState();
   $("#goalNum").textContent=g.met?"Geschafft ✓":`${g.done} von ${g.total}`;
   const left=S.plan.target-today();
-  let sub=g.met?(streak()>1?streak()+" Tage in Folge":"Morgen geht es weiter"):`${g.newLeft} neue · ${g.dueNow} wiederholen`;
-  if(!g.met&&S.day.catchUp>0)sub+=` · davon ${S.day.catchUp} nachholen`;
+  let sub=g.met?(streak()>1?streak()+" Tage in Folge":"Morgen geht es weiter"):`noch ${g.left} Karten`+(g.dueNow?` · ${g.dueNow} wiederholen fällig`:"");
+  if(!g.met&&S.day.catchUp>0)sub+=` · inkl. ${S.day.catchUp} nachholen`;
   sub+=left>0?` · noch ${left} Tage`:"";
   $("#goalSub").textContent=sub;
   $("#goalBtn").classList.toggle("met",g.met);
@@ -650,9 +648,9 @@ function renderPlan(){
   $("#planFacts").innerHTML=
     `<div class="fact"><small>Sicher</small><b>${sure} / ${TOTAL}</b></div>`+
     `<div class="fact"><small>Tage bis zum Ziel</small><b>${Math.max(0,S.plan.target-t)}</b></div>`+
-    `<div class="fact"><small>Neue Karten pro Tag</small><b>${t>lastNewDay()?0:perDay()}</b></div>`+
+    `<div class="fact"><small>Karten pro Tag</small><b>${DAILY}</b></div>`+
     `<div class="fact"><small>In Folge geschafft</small><b>${streak()} ${streak()===1?"Tag":"Tage"}</b></div>`+
-    `<div class="fact" style="grid-column:1/-1"><small>So läuft dein Plan</small>Bis ${fmt(lastNewDay())} lernst du alle ${TOTAL} Karten neu. Danach wiederholst du nur noch, bis am ${fmtY(S.plan.target)} alles sicher sitzt.${missed.length?` Verpasste Tage: ${missed.length}. Die Karten davon sind in deinem Tagesziel zum Nachholen.`:""}</div>`;
+    `<div class="fact" style="grid-column:1/-1"><small>So läuft dein Plan</small>Jeden Tag ${DAILY} Karten. Zuerst kommen die fälligen Wiederholungen, die freien Plätze füllen neue Karten. Noch ${CARDS.filter(isNew).length} Karten sind neu.${missed.length?` Verpasste Tage: ${missed.length}. Du holst sie nach, mit bis zu ${MAXCATCH} Karten extra pro Tag.`:""}</div>`;
   /* Monate von Planstart bis Ziel */
   const first=dayDate(Math.min(S.plan.start,t)),last=dayDate(S.plan.target);
   let y=first.getUTCFullYear(),m=first.getUTCMonth(),html="";
@@ -665,21 +663,21 @@ function renderPlan(){
     if(++m>11){m=0;y++}
   }
   $("#cal").innerHTML=html;
-  $("#targetDate").value=iso(S.plan.target);$("#targetDate").min=iso(t+BUFFER+1);
+  $("#targetDate").value=iso(S.plan.target);$("#targetDate").min=iso(t+1);
   $("#dayDetail").textContent="Tippe auf einen Tag, um zu sehen, was du gemacht hast.";
 }
 function dayText(d){
   const lg=S.log[d],t=today(),cl=dayClass(d);
   if(d===S.plan.target)return `${fmtY(d)}: Dein Ziel. Bis hier sollen alle Karten sicher sitzen.`;
-  if(d>t){return d<=lastNewDay()?`${fmtY(d)}: Geplant sind ${perDay()} neue Karten plus die fälligen Wiederholungen.`:`${fmtY(d)}: Nur noch wiederholen.`}
+  if(d>t)return `${fmtY(d)}: Geplant sind ${DAILY} Karten.`;
   if(!lg||((lg.n||0)+(lg.r||0))===0)return d<S.plan.start?`${fmtY(d)}: Vor deinem Plan.`:`${fmtY(d)}: Nichts gemacht. Die Karten von diesem Tag holst du im Tagesziel nach.`;
-  return `${fmtY(d)}: ${lg.n||0} neue Karten gelernt, ${lg.r||0} wiederholt. ${cl==="ok"?"Tagesziel erreicht.":d===t?"Tagesziel noch offen.":"Tagesziel nicht ganz geschafft."}`;
+  return `${fmtY(d)}: ${cnt(lg)} Karten gemacht (${lg.n||0} neu, ${cnt(lg)-(lg.n||0)} wiederholt). ${cl==="ok"?"Tagesziel erreicht.":d===t?"Tagesziel noch offen.":"Tagesziel nicht ganz geschafft."}`;
 }
 $("#goalBtn").addEventListener("click",()=>openLayer("#planSheet",renderPlan));
 $("#closePlan").addEventListener("click",()=>closeLayer("#planSheet"));
 $("#planSheet").addEventListener("click",e=>{if(e.target.id==="planSheet")closeLayer("#planSheet")});
 $("#cal").addEventListener("click",e=>{const b=e.target.closest(".day");if(!b)return;$("#cal").querySelectorAll(".sel").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");$("#dayDetail").textContent=dayText(+b.dataset.d)});
-$("#targetDate").addEventListener("change",e=>{const v=fromIso(e.target.value);if(v===null||v<=today()+BUFFER){e.target.value=iso(S.plan.target);return}makePlan(v);S.day=null;save();renderPlan();renderHead()});
+$("#targetDate").addEventListener("change",e=>{const v=fromIso(e.target.value);if(v===null||v<=today()){e.target.value=iso(S.plan.target);return}makePlan(v);S.day=null;save();renderPlan();renderHead()});
 
 /* ---------- Feier, wenn das Tagesziel erreicht ist ---------- */
 const CHEERS=[
@@ -720,16 +718,15 @@ function checkGoal(){
 
 /* ---------- Runden ----------
    normal: fällige Wiederholungen, dann neue Karten bis zum Tagesziel.
-   extra: freiwillig wiederholen (ändert den Plan nur bei Fehlern). morenew: 5 neue Karten extra. */
+   extra: freiwillig wiederholen (ändert den Plan nur bei Fehlern). */
 function startRound(ids,mode){
   ensureDay();
   let list;
   if(ids)list=ids.map(id=>byId[id]);
   else if(mode==="extra")list=shuffle(CARDS.filter(c=>!isNew(c))).sort((a,b)=>S.srs[a.id].s-S.srs[b.id].s).slice(0,10);
-  else if(mode==="morenew")list=newCards().slice(0,5);
-  else list=dueCards().concat(newCards().slice(0,goalState().newLeft)).slice(0,S.size||10);
+  else{const g=goalState();list=dueCards().concat(newCards()).slice(0,Math.min(S.size||10,g.met?(S.size||10):g.left))}
   if(!list.length){finished();return}
-  if(!ids&&mode!=="morenew")shuffle(list);
+  if(!ids)shuffle(list);
   R={queue:list.map(c=>c.id),total:list.length,done:0,failed:new Set(),firstRight:0,extra:mode==="extra"||!!ids};
   $("#study").hidden=false;$("#done").hidden=true;
   showCard();
@@ -782,7 +779,7 @@ function rate(known){
   if(!flipped||busy)return;
   const id=R.queue.shift(),c=byId[id],t=today();
   ensureDay();
-  if(isNew(c))logAct("n");else if(!R.failed.has(id)&&S.srs[id].due<=t)logAct("r");
+  if(isNew(c))logAct("n");else if(!R.failed.has(id))logAct("r");
   if(known){
     const s=nextStep(c);
     if(!R.extra||R.failed.has(id))S.srs[id]={s,due:t+INTERVALS[s]};
@@ -799,19 +796,19 @@ function rate(known){
 }
 function tomorrowCount(){const t=today()+1;return CARDS.filter(c=>!isNew(c)&&S.srs[c.id].due<=t).length}
 function doneButtons(g){
-  const canMore=g.met||g.newLeft===0;
-  $("#nextBtn").hidden=g.met||(g.dueNow===0&&(g.newLeft===0||!newCards().length));
-  $("#moreNewBtn").hidden=!(g.met&&newCards().length);
-  $("#extraBtn").hidden=!(g.met&&CARDS.some(c=>!isNew(c)));
+  const avail=g.dueNow>0||g.newAvail>0,learnedAny=CARDS.some(c=>!isNew(c));
+  $("#nextBtn").hidden=g.met||!avail;
+  $("#moreNewBtn").hidden=!(g.met&&avail);
+  $("#extraBtn").hidden=!(learnedAny&&(g.met||!avail));
   let hint="";
-  if(!g.met&&g.dueNow===0&&g.newLeft>0&&!newCards().length)hint=`<p class="hint2">Dir fehlen noch ${g.newLeft} neue Karten fürs Tagesziel. Wähle oben ein höheres Kapitel, dann kommen weitere Karten.</p>`;
+  if(!g.met&&!avail)hint=`<p class="hint2">Für dein Tagesziel fehlen noch ${g.left} Karten. Wähle oben ein höheres Kapitel für neue Karten oder tippe auf „Wiederholen“.</p>`;
   return hint;
 }
 function summary(){
   $("#study").hidden=true;$("#done").hidden=false;
   const goalNow=checkGoal(),g=goalState();
   $("#doneTitle").textContent=g.met?"Tagesziel geschafft":"Runde geschafft";
-  $("#doneTxt").innerHTML=`Beim ersten Versuch gewusst: <b>${R.firstRight} von ${R.total}</b>`+(g.met?`<br>Morgen sind <b>${tomorrowCount()}</b> Karten fällig.`:`<br>Noch offen: <b>${g.newLeft}</b> neue, <b>${g.dueNow}</b> wiederholen.`);
+  $("#doneTxt").innerHTML=`Beim ersten Versuch gewusst: <b>${R.firstRight} von ${R.total}</b>`+(g.met?`<br>Morgen sind <b>${tomorrowCount()}</b> Wiederholungen fällig.`:`<br>Noch <b>${g.left}</b> Karten bis zum Tagesziel.`);
   const f=[...R.failed].map(id=>byId[id]);
   $("#doneList").innerHTML=(f.length?`<span class="lbl">Nochmal üben</span><ul class="again">${f.map(c=>`<li><code>${esc(c.t)}</code><span>${esc(c.de)}</span></li>`).join("")}</ul>`:"")+doneButtons(g);
   $("#againBtn").hidden=!f.length;
@@ -827,7 +824,7 @@ function finished(){
 $("#againBtn").addEventListener("click",()=>startRound([...R.failed]));
 $("#nextBtn").addEventListener("click",()=>startRound());
 $("#extraBtn").addEventListener("click",()=>startRound(null,"extra"));
-$("#moreNewBtn").addEventListener("click",()=>startRound(null,"morenew"));
+$("#moreNewBtn").addEventListener("click",()=>startRound());
 cardEl.addEventListener("click",flip);
 $("#flipBtn").addEventListener("click",flip);
 $("#noBtn").addEventListener("click",()=>rate(false));
