@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Python">
+<meta name="theme-color" content="#1D5BA6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Python Karteikarten</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: eine schmale Lernspalte. Oben Stand und Einstellungen, in der Mitte die Karteikarte (DIN A7 Optik mit roter Kopflinie), unten feste Bewertungsknöpfe. */
+:root{
+  --desk:#E4EAEE; --card:#FFFFFF; --ink:#18212B; --muted:#576574; --line:#CDD7E0;
+  --rule:#D6E2EE; --red:#C63A2F; --accent:#1D5BA6; --on-accent:#FFFFFF;
+  --good:#1E7A4C; --on-good:#FFFFFF; --good-soft:#DDF0E5;
+  --bad:#A9501A; --bad-soft:#FBE8DA; --mid:#7FA6D6;
+  --code-bg:#EFF3F7; --term-bg:#18212B; --term-fg:#CDEFD8;
+  --shadow:0 1px 2px rgba(24,33,43,.08),0 6px 18px rgba(24,33,43,.08);
+  --f-body:"Atkinson Hyperlegible","Atkinson Hyperlegible Next",Verdana,system-ui,sans-serif;
+  --f-mono:"Atkinson Hyperlegible Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --desk:#10151B; --card:#1A2129; --ink:#E5ECF2; --muted:#9AA9B8; --line:#2B3541;
+  --rule:#243040; --red:#E26458; --accent:#79ADEE; --on-accent:#0E1620;
+  --good:#5DC28E; --on-good:#0C1A12; --good-soft:#18301F;
+  --bad:#F0995F; --bad-soft:#35231A; --mid:#4C6E99;
+  --code-bg:#131920; --term-bg:#0A0E12; --term-fg:#A9E8BF;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.3); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --desk:#10151B; --card:#1A2129; --ink:#E5ECF2; --muted:#9AA9B8; --line:#2B3541;
+  --rule:#243040; --red:#E26458; --accent:#79ADEE; --on-accent:#0E1620;
+  --good:#5DC28E; --on-good:#0C1A12; --good-soft:#18301F;
+  --bad:#F0995F; --bad-soft:#35231A; --mid:#4C6E99;
+  --code-bg:#131920; --term-bg:#0A0E12; --term-fg:#A9E8BF;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.3); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--desk);color:var(--ink);font:400 1.125rem/1.6 var(--f-body)}
+.wrap{max-width:40rem;margin:0 auto;padding-inline:16px;padding-block:1.25rem 0}
+h1{font-size:1.55rem;line-height:1.2;margin:0;text-wrap:balance}
+h2{font-size:1.3rem;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:.15rem 0 0;font-size:1rem}
+code,pre{font-family:var(--f-mono)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Stand */
+.stand{margin-top:1rem;display:grid;gap:.45rem}
+.bar{display:flex;height:.6rem;border-radius:99px;overflow:hidden;background:var(--line)}
+.bar span{display:block;height:100%;transition:width .3s}
+.legend{display:flex;flex-wrap:wrap;gap:.3rem 1rem;font-size:.9rem;color:var(--muted)}
+.legend b{color:var(--ink);font-variant-numeric:tabular-nums}
+.dot{display:inline-block;width:.65rem;height:.65rem;border-radius:50%;margin-right:.35rem;vertical-align:baseline}
+.l0{background:var(--line)} .l1{background:var(--bad)} .l2{background:var(--mid)} .l3{background:var(--good)}
+
+/* Einstellungen */
+details.set{margin-top:1rem;background:var(--card);border:1px solid var(--line);border-radius:8px}
+details.set>summary{list-style:none;cursor:pointer;padding:.7rem .9rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem;font-size:1rem}
+details.set>summary::-webkit-details-marker{display:none}
+details.set>summary .cur{color:var(--muted);font-size:.92rem;min-width:0}
+details.set>summary .chev{flex:none;transition:transform .2s;color:var(--muted)}
+details.set[open]>summary .chev{transform:rotate(180deg)}
+.set-body{padding:0 .9rem 1rem;display:grid;gap:1rem}
+.lbl{display:block;font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.chip,.seg button{border:1.5px solid var(--line);background:var(--card);border-radius:6px;padding:.4rem .65rem;font-size:.95rem;cursor:pointer;line-height:1.3}
+.chip small{color:var(--muted);font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chip[aria-pressed="true"] small{color:inherit;opacity:.8}
+.seg{display:flex;flex-wrap:wrap;gap:.4rem}
+.start{justify-self:start}
+
+/* Fortschritt der Runde */
+.prog{margin-top:1.25rem;display:flex;justify-content:space-between;align-items:baseline;font-size:.95rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.pbar{height:.35rem;background:var(--line);border-radius:99px;margin-top:.35rem;overflow:hidden}
+.pbar span{display:block;height:100%;background:var(--accent);transition:width .3s}
+
+/* Karteikarte */
+.stage{perspective:1400px;margin-top:.9rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);padding:0 1.25rem 1.25rem;cursor:pointer;transition:transform .17s ease-in-out;transform-origin:50% 50%;overflow:hidden}
+.card.half{transform:rotateY(90deg)}
+.card.back{cursor:default}
+.kk-head{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;height:2.6rem;margin:0 -1.25rem;padding:0 1.25rem .35rem;border-bottom:2px solid var(--red);font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.front .body{min-height:15rem;margin:0 -1.25rem -1.25rem;padding:1.25rem 1.25rem 1.5rem;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.9rem;
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(2.2rem - 1px),var(--rule) calc(2.2rem - 1px),var(--rule) 2.2rem)}
+.term{font-family:var(--f-mono);font-weight:600;font-size:clamp(1.7rem,7vw,2.4rem);line-height:1.25;overflow-wrap:anywhere;background:var(--card);padding:0 .3rem}
+.term.word{font-family:var(--f-body);font-weight:700}
+.de-big{font-size:1.6rem;font-weight:700;line-height:1.3;margin:0;background:var(--card);padding:0 .3rem;text-wrap:balance}
+.what-front{margin:0;max-width:32rem;background:var(--card);padding:0 .3rem}
+.prompt{margin:0;color:var(--muted);font-size:.95rem;background:var(--card);padding:0 .3rem}
+.back .body{padding-top:1rem;display:grid;grid-template-columns:minmax(0,1fr);gap:1rem}
+.back .body>*{min-width:0}
+.back .head-term{font-family:var(--f-mono);font-weight:600;font-size:1.45rem;line-height:1.3;overflow-wrap:anywhere}
+.back .head-term.word{font-family:var(--f-body);font-weight:700}
+.row p{margin:0}
+.de{font-weight:700;font-size:1.2rem}
+pre{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:.7rem .85rem;overflow-x:auto;font-size:.95rem;line-height:1.5;white-space:pre}
+pre.out{background:var(--term-bg);color:var(--term-fg);border-color:var(--term-bg)}
+.err{background:var(--bad-soft);border-radius:6px;padding:.7rem .85rem}
+.err .lbl{color:var(--bad)}
+.err p{margin:0}
+
+/* Knöpfe */
+.actions{position:sticky;bottom:0;z-index:2;margin-top:.5rem;padding:.9rem 0 calc(.9rem + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--desk) 75%,transparent);display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.btn{border:2px solid transparent;border-radius:8px;padding:.85rem 1rem;min-height:3.3rem;font-weight:700;font-size:1.05rem;cursor:pointer;line-height:1.2}
+.btn-main{background:var(--accent);color:var(--on-accent);grid-column:1/-1}
+.btn-no{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+.btn-yes{background:var(--good);color:var(--on-good)}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.keys{grid-column:1/-1;text-align:center;font-size:.82rem;color:var(--muted);margin:0}
+@media (hover:none){.keys{display:none}}
+
+/* Rundenende */
+.done{margin-top:1.25rem;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:1.25rem;display:grid;gap:1rem}
+.done .big{font-size:1.15rem;margin:0}
+.done .big b{font-variant-numeric:tabular-nums}
+.again{display:grid;gap:.4rem;margin:0;padding:0;list-style:none}
+.again li{display:flex;gap:.75rem;align-items:baseline;flex-wrap:wrap}
+.again code{font-weight:600}
+.again span{color:var(--muted)}
+.done .btns{display:flex;flex-wrap:wrap;gap:.75rem}
+
+/* Alle Begriffe */
+details.all{margin-top:2rem;border-top:1px solid var(--line);padding-top:.5rem}
+details.all>summary{cursor:pointer;font-weight:700;padding:.5rem 0}
+.group h3{font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:1.25rem 0 .4rem}
+.list{display:grid;gap:.1rem}
+.item{display:grid;grid-template-columns:1rem minmax(0,11rem) minmax(0,1fr);gap:.6rem;align-items:baseline;padding:.3rem 0;border-bottom:1px solid var(--line);font-size:.98rem}
+.item code{font-weight:600;overflow-wrap:anywhere}
+.item .dot{margin:0}
+.foot{margin:2rem 0 2.5rem;display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;font-size:.9rem;color:var(--muted)}
+.foot button{background:none;border:1.5px solid var(--line);border-radius:6px;padding:.4rem .7rem;cursor:pointer;font-size:.9rem}
+.foot button.warn{border-color:var(--bad);color:var(--bad)}
+
+.badge{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:4px;background:var(--code-bg);color:var(--muted);border:1px solid var(--line)}
+.src{font-size:.88rem;color:var(--muted);margin:0}
+.tip{margin:.75rem 0 0;font-size:.95rem;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:6px;padding:.6rem .8rem}
+.kap{margin-top:1rem}
+pre.syn{border-left:4px solid var(--accent);font-size:1.02rem}
+.colon{color:var(--red);font-weight:800;font-size:1.2em}
+.en{font-size:1.1rem;margin:0;font-style:italic}
+.merke{margin:.45rem 0 0;font-size:.95rem}
+.kapseg button{min-width:2.6rem;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.kapinfo{margin:.45rem 0 0;font-size:.9rem;color:var(--muted)}
+.chip:disabled{opacity:.4;cursor:not-allowed}
+@media (prefers-reduced-motion:reduce){.card,.bar span,.pbar span,details.set>summary .chev{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Python Karteikarten</h1>
+    <p class="sub">Alle Befehle und Zeichen, die du in Informatik 1 zum Programmieren brauchst. Vorne steht der Befehl. Sag laut, was er auf Deutsch heißt und was er macht. Dann umdrehen.</p>
+  </header>
+
+  <section class="stand" aria-label="Dein Lernstand">
+    <div class="bar" id="bar"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <p class="tip">Laut Vorlesung 12 ist die Klausur auf Papier ohne Hilfsmittel. Übe darum auch die Richtung <b>Deutsch → Python</b>: Dann musst du den Code selbst wissen.</p>
+
+  <section class="kap" aria-label="Kapitel begrenzen">
+    <span class="lbl">Bis Kapitel</span>
+    <div class="seg kapseg" id="kap"></div>
+    <p class="kapinfo" id="kapinfo"></p>
+  </section>
+
+  <details class="set" id="set">
+    <summary><span>Runde einstellen<br><span class="cur" id="cur"></span></span><span class="chev" aria-hidden="true">▾</span></summary>
+    <div class="set-body">
+      <div>
+        <span class="lbl">Themen</span>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div>
+        <span class="lbl">Karten pro Runde</span>
+        <div class="seg" id="size"></div>
+      </div>
+      <div>
+        <span class="lbl">Richtung</span>
+        <div class="seg" id="dir"></div>
+      </div>
+      <button class="btn btn-main start" id="startBtn" type="button">Neue Runde starten</button>
+    </div>
+  </details>
+
+  <main id="study">
+    <div class="prog"><span id="progTxt"></span><span id="progTopic"></span></div>
+    <div class="pbar"><span id="pfill"></span></div>
+    <div class="stage">
+      <div class="card front" id="card" role="button" tabindex="0" aria-live="polite"></div>
+    </div>
+    <div class="actions" id="actions">
+      <button class="btn btn-main" id="flipBtn" type="button">Umdrehen</button>
+      <button class="btn btn-no" id="noBtn" type="button" hidden>Noch nicht</button>
+      <button class="btn btn-yes" id="yesBtn" type="button" hidden>Gewusst</button>
+      <p class="keys" id="keys">Leertaste: umdrehen</p>
+    </div>
+  </main>
+
+  <section class="done" id="done" hidden>
+    <h2>Runde geschafft</h2>
+    <p class="big" id="doneTxt"></p>
+    <div id="doneList"></div>
+    <div class="btns">
+      <button class="btn btn-no" id="againBtn" type="button">Nur diese nochmal üben</button>
+      <button class="btn btn-main" id="nextBtn" type="button" style="grid-column:auto">Nächste Runde</button>
+    </div>
+  </section>
+
+  <details class="all" id="all">
+    <summary>Alle Begriffe als Liste ansehen</summary>
+    <div id="allList"></div>
+  </details>
+
+  <div class="foot">
+    <span id="sync" aria-live="polite">Dein Fortschritt wird in diesem Browser gespeichert.</span>
+    <button type="button" id="resetBtn">Fortschritt löschen</button>
+  </div>
+</div>
+
+<script>
+/* Nur Befehle, Zeichen und Fehlermeldungen, die man beim Programmieren tippt oder sieht.
+   t Vorderseite, en englisches Wort auf Deutsch, de was es in Python bedeutet, w was macht es,
+   syn Schreibweise, ex Beispiel, out Ausgabe, err typischer Fehler, src Quelle, x nicht auf den Folien */
+const TOPICS=[
+ {id:"io",name:"Ausgabe und Eingabe"},
+ {id:"zeichen",name:"Zeichen und Rechnen"},
+ {id:"typen",name:"Datentypen"},
+ {id:"wenn",name:"Bedingungen"},
+ {id:"schleife",name:"Schleifen"},
+ {id:"funk",name:"Funktionen"},
+ {id:"liste",name:"Listen und Tupel"},
+ {id:"text",name:"Texte (Strings)"},
+ {id:"dict",name:"Dictionaries und Mengen"},
+ {id:"datei",name:"Dateien"},
+ {id:"modul",name:"Module"},
+ {id:"fehler",name:"Fehler abfangen"},
+ {id:"meldung",name:"Fehlermeldungen"},
+ {id:"test",name:"Testen"}
+];
+const DATA={
+io:[
+ {t:"print",en:"drucken",de:"ausgeben",w:"Zeigt Text oder Werte im Terminal an.",syn:`print(wert)`,ex:`print("Hallo Welt")\nprint("Summe:", 5 + 3)`,out:`Hallo Welt\nSumme: 8`,err:"Klammern vergessen: print \"Hallo\" gibt einen Fehler.",src:"V1"},
+ {t:"input",en:"Eingabe",de:"etwas eintippen lassen",w:"Wartet, bis du im Terminal etwas tippst und Enter drückst. Das Ergebnis ist immer Text.",syn:`name = input("Frage: ")`,ex:`name = input("Wie heißt du? ")\nprint("Hallo", name)`,err:"Mit der Eingabe direkt rechnen. Erst int() oder float() drum herum.",src:"V1"},
+ {t:"int(input())",en:"ganze Zahl aus Eingabe",de:"Eingabe als ganze Zahl",w:"Holt eine Eingabe und macht sofort eine ganze Zahl daraus.",syn:`alter = int(input("Alter: "))`,err:"Wer 3.5 eintippt, bekommt einen ValueError. Für Kommazahlen float(input()) nehmen.",src:"V1"},
+ {t:"float(input())",en:"Kommazahl aus Eingabe",de:"Eingabe als Kommazahl",w:"Holt eine Eingabe und macht sofort eine Kommazahl daraus.",syn:`laenge = float(input("Länge in m: "))`,src:"V1"},
+ {t:"#",en:"Raute",de:"Kommentar",w:"Alles hinter # ignoriert Python. Hier schreibst du Notizen für Menschen.",ex:`# Fläche berechnen\nflaeche = 3 * 4`,src:"V1"},
+ {t:"sep=",en:"separator = Trenner",de:"Trennzeichen bei print",w:"Bestimmt, was print zwischen mehrere Werte setzt. Normal ist ein Leerzeichen.",ex:`print(3, 4, 5, sep="-")`,out:`3-4-5`,src:"V6"},
+ {t:"end=",en:"Ende",de:"Zeilenende bei print",w:"Bestimmt, was print am Ende schreibt. Normal ist eine neue Zeile.",ex:`print("A", end=" ")\nprint("B")`,out:`A B`,src:"V6"},
+ {t:"f\"...\"",en:"f für formatted = formatiert",de:"f-String",w:"Setzt Variablen direkt in einen Text ein. Die Variable steht in { }.",syn:`f"Text {variable} Text"`,ex:`name = "Max"\nalter = 25\nprint(f"Hallo, {name}! Du bist {alter} Jahre alt.")`,out:`Hallo, Max! Du bist 25 Jahre alt.`,err:"Das f vorne vergessen. Dann steht {name} wörtlich da.",src:"V6"},
+ {t:"{x:.2f}",en:"f für float",de:"auf 2 Nachkommastellen",w:"Im f-String: zeigt eine Kommazahl mit genau 2 Stellen nach dem Punkt. Es wird gerundet.",ex:`c = 2.8888888\nprint(f"{c:.2f} Grad")`,out:`2.89 Grad`,src:"V6"},
+ {t:".format()",en:"formatieren",de:"Werte in Text einsetzen",w:"Die { } im Text werden der Reihe nach durch die Werte ersetzt.",ex:`print("Alter: {}, Gewicht: {}".format(42, 70.4))`,out:`Alter: 42, Gewicht: 70.4`,src:"V6"},
+ {t:"\\n",en:"n für new line = neue Zeile",de:"Zeilenumbruch",w:"Im Text beginnt hier eine neue Zeile.",ex:`print("Zeile 1\\nZeile 2")`,out:`Zeile 1\nZeile 2`,src:"V2"},
+ {t:"\\t",en:"t für tab = Tabulator",de:"Tabulator",w:"Im Text kommt hier ein großer Abstand (Tab).",ex:`print("Name\\tAlter")`,out:`Name\tAlter`,src:"V2"}
+],
+zeichen:[
+ {t:"=",en:"gleich",de:"Zuweisung (speichern)",w:"Speichert den Wert von rechts in der Variable links. Kein Vergleich!",ex:`x = 5\nx = x + 1\nprint(x)`,out:`6`,err:"= und == verwechseln. = speichert, == vergleicht.",src:"V2"},
+ {t:"==",en:"ist gleich",de:"Vergleich: gleich?",w:"Prüft, ob zwei Werte gleich sind. Ergebnis: True oder False.",ex:`print(5 == 5)\nprint("a" == "b")`,out:`True\nFalse`,err:"if x = 5: gibt einen SyntaxError. Im if braucht man ==.",src:"V2"},
+ {t:"!=",en:"ist nicht gleich",de:"Vergleich: ungleich?",w:"Prüft, ob zwei Werte verschieden sind.",ex:`print(5 != 3)`,out:`True`,src:"V2"},
+ {t:"<",en:"kleiner als",de:"Vergleich: kleiner?",w:"True, wenn der linke Wert kleiner ist.",ex:`print(3 < 5)`,out:`True`,src:"V2"},
+ {t:">",en:"größer als",de:"Vergleich: größer?",w:"True, wenn der linke Wert größer ist.",ex:`print(3 > 5)`,out:`False`,src:"V2"},
+ {t:"<=",en:"kleiner oder gleich",de:"Vergleich: kleiner gleich?",w:"True, wenn links kleiner oder gleich groß ist.",ex:`print(3 <= 3)`,out:`True`,err:"=< schreiben. Richtig ist <=, das Gleichzeichen kommt immer hinten.",src:"V2"},
+ {t:">=",en:"größer oder gleich",de:"Vergleich: größer gleich?",w:"True, wenn links größer oder gleich groß ist.",ex:`alter = 18\nprint(alter >= 18)`,out:`True`,err:"=> schreiben. Richtig ist >=.",src:"V2"},
+ {t:"+",en:"plus",de:"plus, Texte verbinden",w:"Rechnet plus. Bei Texten hängt + sie aneinander.",ex:`print(3 + 4)\nprint("Geo" + "info")`,out:`7\nGeoinfo`,err:"Text + Zahl geht nicht: \"Alter: \" + 20 gibt einen TypeError.",src:"V2"},
+ {t:"-",en:"minus",de:"minus",w:"Rechnet minus.",ex:`print(10 - 4)`,out:`6`,src:"V2"},
+ {t:"*",en:"mal",de:"mal, Text wiederholen",w:"Rechnet mal. Text mal Zahl wiederholt den Text.",ex:`print(3 * 4)\nprint("*" * 3)`,out:`12\n***`,src:"V2"},
+ {t:"/",en:"geteilt",de:"geteilt",w:"Teilt. Das Ergebnis ist immer eine Kommazahl.",ex:`print(7 / 2)\nprint(6 / 2)`,out:`3.5\n3.0`,err:"Durch 0 teilen gibt einen ZeroDivisionError.",src:"V2"},
+ {t:"//",en:"ganzzahlig geteilt",de:"teilen ohne Rest",w:"Teilt und schneidet die Nachkommastellen ab.",ex:`print(7 // 2)`,out:`3`,src:"V2"},
+ {t:"%",en:"modulo",de:"Rest beim Teilen",w:"Gibt den Rest beim Teilen. Mit % 2 prüfst du, ob eine Zahl gerade ist.",ex:`print(7 % 2)\nprint(10 % 2)`,out:`1\n0`,src:"V2"},
+ {t:"**",en:"hoch",de:"Potenz",w:"2 ** 3 heißt 2 hoch 3.",ex:`print(2 ** 3)`,out:`8`,err:"^ für hoch benutzen. Das ist in Python etwas anderes.",src:"V2"},
+ {t:"+=",en:"plus gleich",de:"erhöhen um",w:"x += 1 ist dasselbe wie x = x + 1. Genauso gibt es -=, *= und /=.",ex:`summe = 0\nsumme += 5\nsumme += 2\nprint(summe)`,out:`7`,src:"V3"},
+ {t:"and",en:"und",de:"und",w:"True nur, wenn beide Bedingungen True sind.",ex:`alter = 20\nprint(alter > 18 and alter < 30)`,out:`True`,src:"V2"},
+ {t:"or",en:"oder",de:"oder",w:"True, wenn mindestens eine Bedingung True ist.",ex:`print(3 > 5 or 2 < 4)`,out:`True`,src:"V2"},
+ {t:"not",en:"nicht",de:"nicht (umdrehen)",w:"Macht aus True False und aus False True.",ex:`print(not True)`,out:`False`,src:"V2"},
+ {t:"in",en:"in",de:"ist enthalten?",w:"Prüft, ob etwas in einer Liste oder einem Text vorkommt.",ex:`print("a" in "Haus")\nprint(5 in [1, 2, 3])`,out:`True\nFalse`,src:"V3"},
+ {t:"not in",en:"nicht in",de:"ist nicht enthalten?",w:"Das Gegenteil von in.",ex:`print("x" not in "Haus")`,out:`True`,src:"V6"},
+ {t:"is",en:"ist",de:"ist dasselbe Objekt?",w:"Wird vor allem mit None benutzt.",ex:`x = None\nprint(x is None)`,out:`True`,src:"V4"},
+ {t:".",en:"Punkt",de:"Methode aufrufen",w:"Der Punkt verbindet ein Objekt mit seiner Methode oder ein Modul mit seiner Funktion.",ex:`liste = [1, 2]\nliste.append(3)\nprint(liste)`,out:`[1, 2, 3]`,err:"Komma statt Punkt bei Kommazahlen: 3,5 ist falsch, richtig ist 3.5.",src:"V4"},
+ {t:"\" \"",en:"Anführungszeichen",de:"Text markieren",w:"Alles zwischen Anführungszeichen ist Text (str). Einfache ' ' gehen auch.",ex:`print("Mainz")\nprint('Mainz')`,out:`Mainz\nMainz`,err:"Anführungszeichen vergessen: print(Mainz) gibt einen NameError.",src:"V2"}
+],
+typen:[
+ {t:"int",en:"integer = ganze Zahl",de:"ganze Zahl",w:"Datentyp für ganze Zahlen. Als int() macht es aus Text oder Kommazahl eine ganze Zahl (abschneiden, nicht runden).",ex:`print(int("14") + 5)\nprint(int(3.9))`,out:`19\n3`,err:"int(\"3.5\") gibt einen ValueError.",src:"V2"},
+ {t:"float",en:"Fließkommazahl",de:"Kommazahl",w:"Datentyp für Kommazahlen. Als float() macht es aus Text eine Kommazahl.",ex:`print(float("3.5") * 2)`,out:`7.0`,err:"Komma statt Punkt: 3,5 ist falsch, richtig ist 3.5.",src:"V2"},
+ {t:"str",en:"string = Kette (Zeichenkette)",de:"Text",w:"Datentyp für Text. Als str() macht es aus einer Zahl Text.",ex:`alter = 20\nprint("Alter: " + str(alter))`,out:`Alter: 20`,src:"V2"},
+ {t:"bool",en:"boolean (nach George Boole)",de:"Wahrheitswert",w:"Datentyp mit nur zwei Werten: True oder False.",ex:`ist_tag = True\nprint(type(ist_tag))`,out:`<class 'bool'>`,src:"V2"},
+ {t:"True",en:"wahr",de:"wahr, ja",w:"Einer der beiden Werte von bool. Immer groß schreiben.",ex:`print(3 > 2)`,out:`True`,err:"true klein geschrieben gibt einen NameError.",src:"V2"},
+ {t:"False",en:"falsch",de:"falsch, nein",w:"Der andere Wert von bool. Immer groß schreiben.",ex:`print(3 > 5)`,out:`False`,src:"V2"},
+ {t:"None",en:"keins, nichts",de:"kein Wert",w:"Bedeutet: hier ist nichts. Eine Funktion ohne return gibt None zurück.",ex:`ergebnis = None\nprint(ergebnis)`,out:`None`,src:"V3"},
+ {t:"type",en:"Typ",de:"Datentyp anzeigen",w:"Zeigt, welchen Datentyp ein Wert hat.",ex:`print(type(3.5))\nprint(type("Hallo"))`,out:`<class 'float'>\n<class 'str'>`,src:"V2"},
+ {t:"isinstance",en:"is instance = ist ein Exemplar von",de:"Datentyp prüfen",w:"Prüft, ob ein Wert einen bestimmten Typ hat.",ex:`print(isinstance(5, int))\nprint(isinstance("5", int))`,out:`True\nFalse`,src:"V2"},
+ {t:"round",en:"runden",de:"runden",w:"Rundet auf so viele Nachkommastellen, wie du angibst.",ex:`print(round(3.14159, 2))`,out:`3.14`,src:"Ü2",x:1},
+ {t:"abs",en:"absolute = absolut",de:"Betrag (ohne Minus)",w:"Gibt die Zahl ohne Vorzeichen zurück.",ex:`print(abs(-4.5))`,out:`4.5`,src:"V5"}
+],
+wenn:[
+ {t:"if",en:"wenn",de:"wenn",w:"Der eingerückte Teil läuft nur, wenn die Bedingung True ist.",syn:`if bedingung:\n    anweisung`,ex:`alter = 22\nif alter >= 18:\n    print("Du bist volljährig!")`,out:`Du bist volljährig!`,err:"Doppelpunkt vergessen oder nicht eingerückt.",src:"V3"},
+ {t:"elif",en:"else if = sonst wenn",de:"sonst wenn",w:"Noch eine Bedingung. Wird nur geprüft, wenn alles davor False war.",syn:`if bedingung:\n    anweisung\nelif andere_bedingung:\n    anweisung`,ex:`note = 2\nif note == 1:\n    print("sehr gut")\nelif note == 2:\n    print("gut")`,out:`gut`,src:"V3"},
+ {t:"else",en:"sonst",de:"sonst",w:"Läuft, wenn keine Bedingung davor True war. Hinter else steht nie eine Bedingung, nur der Doppelpunkt.",syn:`if bedingung:\n    anweisung\nelse:\n    anweisung`,ex:`zahl = 7\nif zahl % 2 == 0:\n    print("gerade")\nelse:\n    print("ungerade")`,out:`ungerade`,err:"else zahl > 0: ist falsch. Nach else kommt sofort der Doppelpunkt.",src:"V3"},
+ {t:":",en:"Doppelpunkt",de:"Ende der Kopfzeile",w:"Steht am Ende von if, elif, else, for, while, def, try, except, finally und with. Danach rückst du 4 Leerzeichen ein.",syn:`if x > 0:\n    print("positiv")`,err:"Vergessen: SyntaxError: expected ':'",src:"V3"},
+ {t:"Einrückung",en:"4 Leerzeichen am Zeilenanfang",de:"zeigt, was zusammengehört",w:"Alle Zeilen, die gleich weit eingerückt sind, gehören zum selben Block (zum if, for, def).",syn:`if x > 0:\n    print("gehört zum if")\nprint("gehört nicht mehr dazu")`,err:"Ungleich eingerückt: IndentationError.",src:"V3"},
+ {t:"x if b else y",en:"x wenn b sonst y",de:"if in einer Zeile",w:"Ist die Bedingung True, kommt der linke Wert heraus, sonst der rechte. Hier gibt es keinen Doppelpunkt.",syn:`wert1 if bedingung else wert2`,ex:`x = 10\ny = 20\ngroesser = x if x > y else y\nprint(groesser)`,out:`20`,src:"V3"}
+],
+schleife:[
+ {t:"while",en:"solange",de:"wiederholen, solange",w:"Wiederholt den eingerückten Teil, solange die Bedingung True ist.",syn:`while bedingung:\n    anweisung`,ex:`i = 1\nwhile i <= 3:\n    print(i)\n    i += 1`,out:`1\n2\n3`,err:"i nie ändern: Die Schleife läuft endlos. Abbrechen mit Strg + C.",src:"V3"},
+ {t:"while True",en:"solange wahr (immer)",de:"Endlosschleife",w:"Läuft immer weiter, bis break kommt. Gut für Eingaben, die man wiederholen will.",syn:`while True:\n    anweisung\n    if fertig:\n        break`,ex:`zahl = 0\nwhile True:\n    zahl += 1\n    if zahl == 3:\n        break\nprint(zahl)`,out:`3`,src:"V7"},
+ {t:"for",en:"für",de:"für jedes Element",w:"Geht jedes Element einer Liste, eines Textes oder einer Zahlenfolge der Reihe nach durch.",syn:`for element in folge:\n    anweisung`,ex:`for farbe in ["rot", "blau"]:\n    print(farbe)`,out:`rot\nblau`,src:"V3"},
+ {t:"range",en:"Bereich",de:"Zahlenfolge",w:"Erzeugt Zahlen für eine for-Schleife. Die Endzahl ist nie dabei. range(start, ende, schritt).",syn:`for i in range(start, ende):\n    anweisung`,ex:`for i in range(1, 4):\n    print(i)`,out:`1\n2\n3`,err:"range(1, 10) endet bei 9. Für 1 bis 10 brauchst du range(1, 11).",src:"V3"},
+ {t:"break",en:"abbrechen, brechen",de:"Schleife sofort beenden",w:"Bricht die Schleife sofort ab.",ex:`for i in range(10):\n    if i == 3:\n        break\n    print(i)`,out:`0\n1\n2`,src:"V3"},
+ {t:"continue",en:"weitermachen",de:"zum nächsten Durchlauf",w:"Überspringt den Rest und macht mit dem nächsten Durchlauf weiter.",ex:`for i in range(4):\n    if i == 2:\n        continue\n    print(i)`,out:`0\n1\n3`,src:"V3"},
+ {t:"else (Schleife)",key:"else-schleife",en:"sonst",de:"wenn kein break kam",w:"Ein else nach for oder while läuft nur, wenn die Schleife nicht mit break abgebrochen wurde.",syn:`for element in folge:\n    anweisung\nelse:\n    anweisung`,src:"V3"},
+ {t:"enumerate",en:"aufzählen",de:"durchnummerieren",w:"Gibt in der for-Schleife Nummer und Element zusammen.",ex:`for nr, notiz in enumerate(["Einkaufen", "Lernen"], start=1):\n    print(nr, notiz)`,out:`1 Einkaufen\n2 Lernen`,src:"Ü6",x:1}
+],
+funk:[
+ {t:"def",en:"define = festlegen",de:"eigene Funktion bauen",w:"Erstellt eine Funktion. Der Code darin läuft erst, wenn du die Funktion aufrufst.",syn:`def name(parameter):\n    anweisung\n    return ergebnis`,ex:`def doppelt(x):\n    return x * 2\n\nprint(doppelt(4))`,out:`8`,err:"Funktion nie aufrufen. Dann passiert gar nichts.",src:"V4"},
+ {t:"return",en:"zurückgeben",de:"Ergebnis zurückgeben",w:"Beendet die Funktion und gibt das Ergebnis an die Stelle zurück, wo sie aufgerufen wurde.",syn:`return ergebnis`,ex:`def addiere(a, b):\n    return a + b\n\nsumme = addiere(2, 3)\nprint(summe)`,out:`5`,err:"print statt return. Dann kommt None zurück und du kannst nicht weiterrechnen.",src:"V4"},
+ {t:"name()",key:"aufruf",en:"Klammern = aufrufen",de:"Funktion aufrufen",w:"Erst mit den runden Klammern läuft die Funktion. Werte in der Klammer werden übergeben.",ex:`def hallo():\n    print("Hallo")\n\nhallo()`,out:`Hallo`,err:"Klammern vergessen: hallo statt hallo().",src:"V4"},
+ {t:"parameter=wert",key:"default",en:"Standardwert",de:"Vorgabewert für einen Parameter",w:"Gibst du beim Aufruf nichts an, wird der Vorgabewert genommen.",syn:`def name(parameter=wert):`,ex:`def preis(betrag, steuer=0.19):\n    return betrag * (1 + steuer)\n\nprint(preis(100))\nprint(preis(100, 0.07))`,out:`119.0\n107.0`,src:"V4"},
+ {t:"pass",en:"vorbeigehen, auslassen",de:"tut nichts",w:"Platzhalter, wenn ein Block noch leer ist.",syn:`def name():\n    pass`,src:"V4"},
+ {t:"global",en:"global = überall",de:"globale Variable ändern",w:"Erlaubt einer Funktion, eine Variable von außerhalb zu ändern.",syn:`def f():\n    global name\n    name = neuer_wert`,ex:`zaehler = 0\ndef erhoehe():\n    global zaehler\n    zaehler += 1\n\nerhoehe()\nprint(zaehler)`,out:`1`,src:"V4"},
+ {t:"\"\"\"...\"\"\"",en:"Docstring",de:"Beschreibung einer Funktion",w:"Text in drei Anführungszeichen direkt unter def. Erklärt, was die Funktion macht.",syn:`def name():\n    """Was die Funktion macht"""`,src:"V4"},
+ {t:"help",en:"Hilfe",de:"Hilfe anzeigen",w:"Zeigt die Beschreibung einer Funktion oder eines Moduls.",ex:`help(len)`,src:"V4"},
+ {t:"exit",en:"Ausgang, verlassen",de:"Programm beenden",w:"Beendet das ganze Programm sofort.",ex:`antwort = input("Weiter? ")\nif antwort == "nein":\n    exit()`,src:"V9"}
+],
+liste:[
+ {t:"[ ]",en:"eckige Klammern",de:"Liste",w:"Speichert mehrere Werte in einer festen Reihenfolge. Änderbar.",ex:`zahlen = [4, 8, 15]\nprint(zahlen)`,out:`[4, 8, 15]`,src:"V5"},
+ {t:"liste[0]",en:"Index = Position",de:"Element über Position holen",w:"Gezählt wird ab 0. [-1] ist das letzte Element.",ex:`namen = ["Anna", "Ben", "Cem"]\nprint(namen[0])\nprint(namen[-1])`,out:`Anna\nCem`,err:"namen[3] bei 3 Elementen gibt einen IndexError. Der letzte Index ist 2.",src:"V5"},
+ {t:"liste[1:3]",en:"slice = Scheibe",de:"Ausschnitt",w:"Holt einen Teil. Der Start ist dabei, das Ende nicht.",ex:`z = [10, 20, 30, 40]\nprint(z[1:3])`,out:`[20, 30]`,src:"V5"},
+ {t:"len",en:"length = Länge",de:"Anzahl",w:"Anzahl der Elemente einer Liste oder Anzahl Zeichen eines Textes.",ex:`print(len([4, 5, 6]))\nprint(len("Haus"))`,out:`3\n4`,src:"V3"},
+ {t:".append",en:"anhängen",de:"hinten anhängen",w:"Fügt ein Element am Ende der Liste hinzu.",ex:`z = [1, 2]\nz.append(3)\nprint(z)`,out:`[1, 2, 3]`,err:"z = z.append(3) schreiben. Danach ist z None.",src:"V3"},
+ {t:".insert",en:"einfügen",de:"an Position einfügen",w:"Fügt an einer bestimmten Position ein.",syn:`liste.insert(position, wert)`,ex:`z = [1, 3]\nz.insert(1, 2)\nprint(z)`,out:`[1, 2, 3]`,src:"V5"},
+ {t:".remove",en:"entfernen",de:"Wert löschen",w:"Löscht das erste Element mit diesem Wert.",ex:`z = [1, 2, 3]\nz.remove(2)\nprint(z)`,out:`[1, 3]`,err:"Wert gibt es nicht: ValueError.",src:"V5"},
+ {t:".pop",en:"herausspringen",de:"herausnehmen",w:"Nimmt ein Element heraus und gibt es zurück. Ohne Zahl das letzte.",ex:`z = [1, 2, 3]\nletztes = z.pop()\nprint(letztes, z)`,out:`3 [1, 2]`,src:"V5"},
+ {t:".count",en:"zählen",de:"wie oft kommt es vor?",w:"Zählt, wie oft ein Wert in der Liste steht.",ex:`print([1, 2, 2, 3].count(2))`,out:`2`,src:"V5"},
+ {t:".index",en:"Verzeichnis, Position",de:"Position finden",w:"Gibt die Position des ersten passenden Elements.",ex:`print(["rot", "blau"].index("blau"))`,out:`1`,src:"V5"},
+ {t:".sort",en:"sortieren",de:"Liste sortieren",w:"Sortiert die Liste selbst. reverse=True sortiert absteigend.",ex:`z = [3, 1, 2]\nz.sort()\nprint(z)`,out:`[1, 2, 3]`,err:"z = z.sort() schreiben. Danach ist z None.",src:"V5"},
+ {t:"sorted",en:"sortiert",de:"sortierte Kopie",w:"Gibt eine neue sortierte Liste zurück. Die alte bleibt gleich.",ex:`z = [3, 1, 2]\nneu = sorted(z)\nprint(neu, z)`,out:`[1, 2, 3] [3, 1, 2]`,src:"V5"},
+ {t:"min",en:"minimum = kleinstes",de:"kleinster Wert",w:"Gibt den kleinsten Wert einer Liste.",ex:`print(min([4, 9, 2]))`,out:`2`,src:"Ü8",x:1},
+ {t:"max",en:"maximum = größtes",de:"größter Wert",w:"Gibt den größten Wert einer Liste.",ex:`print(max([4, 9, 2]))`,out:`9`,src:"Ü8",x:1},
+ {t:"sum",en:"Summe",de:"alles zusammenzählen",w:"Zählt alle Zahlen einer Liste zusammen.",ex:`werte = [4, 9, 2]\nprint(sum(werte))\nprint(sum(werte) / len(werte))`,out:`15\n5.0`,src:"Ü8",x:1},
+ {t:"( )",en:"runde Klammern",de:"Tupel",w:"Wie eine Liste, aber nicht änderbar.",ex:`punkt = (3.5, 7.2)\nx, y = punkt\nprint(x)`,out:`3.5`,err:"punkt[0] = 1 gibt einen TypeError, weil Tupel nicht änderbar sind.",src:"V5"},
+ {t:".copy",en:"kopieren",de:"echte Kopie",w:"Macht eine neue Liste. Ohne copy zeigen beide Namen auf dieselbe Liste.",ex:`a = [1, 2]\nb = a.copy()\nb[0] = 99\nprint(a)`,out:`[1, 2]`,err:"b = a ist keine Kopie. Änderst du b, ändert sich a mit.",src:"V7"}
+],
+text:[
+ {t:".split",en:"spalten, teilen",de:"Text aufteilen",w:"Teilt einen Text in eine Liste. Ohne Angabe an den Leerzeichen.",ex:`print("12.5;7.3".split(";"))`,out:`['12.5', '7.3']`,err:"Die Teile sind noch Text. Zum Rechnen float() benutzen.",src:"V6"},
+ {t:".join",en:"verbinden",de:"Liste zu Text verbinden",w:"Verbindet die Elemente einer Liste zu einem Text. Vor dem Punkt steht das Trennzeichen.",ex:`print("-".join(["a", "b", "c"]))`,out:`a-b-c`,src:"V6"},
+ {t:".strip",en:"abziehen",de:"Leerzeichen am Rand weg",w:"Entfernt Leerzeichen und Zeilenumbrüche vorne und hinten.",ex:`print("  Hallo\\n".strip() + "!")`,out:`Hallo!`,src:"Ü7",x:1},
+ {t:".rstrip",en:"right strip = rechts abziehen",de:"rechts säubern",w:"Wie strip, aber nur am Ende. Gut beim Lesen von Dateizeilen.",ex:`print("Zeile\\n".rstrip() + "!")`,out:`Zeile!`,src:"V6"},
+ {t:".replace",en:"ersetzen",de:"ersetzen",w:"Ersetzt einen Teil des Textes durch etwas anderes.",ex:`print("3,5".replace(",", "."))`,out:`3.5`,src:"V6"},
+ {t:".find",en:"finden",de:"Position suchen",w:"Gibt die Position zurück. Nicht gefunden: -1.",ex:`print("Haus".find("u"))\nprint("Haus".find("z"))`,out:`2\n-1`,src:"V6"},
+ {t:".lower",en:"lower = unten (klein)",de:"alles klein",w:"Macht alle Buchstaben klein.",ex:`print("HaLLo".lower())`,out:`hallo`,src:"V6"},
+ {t:".upper",en:"upper = oben (groß)",de:"alles groß",w:"Macht alle Buchstaben groß.",ex:`print("Hallo".upper())`,out:`HALLO`,src:"V6"},
+ {t:".isdigit",en:"is digit = ist Ziffer",de:"nur Ziffern?",w:"True, wenn der Text nur aus Ziffern besteht.",ex:`print("123".isdigit())\nprint("12a".isdigit())`,out:`True\nFalse`,src:"V6"},
+ {t:".isalpha",en:"is alphabetic = ist Buchstabe",de:"nur Buchstaben?",w:"True, wenn der Text nur aus Buchstaben besteht.",ex:`print("abc".isalpha())`,out:`True`,src:"V6"},
+ {t:".isupper",en:"is upper = ist groß",de:"alles groß?",w:"True, wenn alle Buchstaben groß sind. .islower prüft klein.",ex:`print("A".isupper())\nprint("a".islower())`,out:`True\nTrue`,src:"V6"}
+],
+dict:[
+ {t:"{ : }",en:"geschweifte Klammern mit Doppelpunkt",de:"Dictionary (Wörterbuch)",w:"Speichert Paare: Schlüssel und Wert. Du holst den Wert über den Schlüssel.",ex:`preise = {"Milch": 0.99, "Brot": 2.20}\nprint(preise["Milch"])`,out:`0.99`,err:"Schlüssel gibt es nicht: KeyError.",src:"V5"},
+ {t:"d[schluessel] = wert",key:"dset",en:"setzen",de:"Eintrag hinzufügen oder ändern",w:"Neuer Schlüssel: wird angelegt. Alter Schlüssel: Wert wird überschrieben.",ex:`tel = {}\ntel["Anna"] = "123"\nprint(tel)`,out:`{'Anna': '123'}`,src:"V5"},
+ {t:".get",en:"holen",de:"Wert holen ohne Fehler",w:"Gibt den Wert. Fehlt der Schlüssel, kommt None statt Fehler.",ex:`d = {"rot": "red"}\nprint(d.get("rot"))\nprint(d.get("blau"))`,out:`red\nNone`,src:"V5"},
+ {t:".keys",en:"Schlüssel",de:"alle Schlüssel",w:"Gibt alle Schlüssel eines Dictionaries.",ex:`d = {"a": 1, "b": 2}\nprint(list(d.keys()))`,out:`['a', 'b']`,src:"V5"},
+ {t:".values",en:"Werte",de:"alle Werte",w:"Gibt alle Werte eines Dictionaries.",ex:`d = {"a": 1, "b": 2}\nprint(list(d.values()))`,out:`[1, 2]`,src:"V5"},
+ {t:".items",en:"Einträge",de:"alle Paare",w:"Gibt Schlüssel und Wert zusammen. Gut für for.",ex:`d = {"Anna": "123", "Ben": "456"}\nfor name, nummer in d.items():\n    print(name, nummer)`,out:`Anna 123\nBen 456`,src:"Ü5",x:1},
+ {t:"set",en:"Menge",de:"Menge ohne Doppelte",w:"Jedes Element nur einmal, keine Reihenfolge.",ex:`farben = set(["rot", "rot", "blau"])\nprint(len(farben))`,out:`2`,src:"V5"},
+ {t:".add",en:"hinzufügen",de:"zur Menge hinzufügen",w:"Fügt ein Element zu einer Menge hinzu.",ex:`s = {1, 2}\ns.add(3)\nprint(s)`,out:`{1, 2, 3}`,src:"V5"},
+ {t:".intersection",en:"Kreuzung, Schnitt",de:"Schnittmenge",w:"Alles, was in beiden Mengen vorkommt.",ex:`a = {"rot", "blau"}\nb = {"blau", "gelb"}\nprint(a.intersection(b))`,out:`{'blau'}`,src:"V5"},
+ {t:".union",en:"Vereinigung",de:"alles zusammen",w:"Alle Elemente aus beiden Mengen, ohne Doppelte.",ex:`print({1, 2}.union({2, 3}))`,out:`{1, 2, 3}`,src:"V5"},
+ {t:".difference",en:"Unterschied",de:"was nur in der ersten ist",w:"Alles aus der ersten Menge, das nicht in der zweiten ist.",ex:`print({1, 2, 3}.difference({2}))`,out:`{1, 3}`,src:"V5"}
+],
+datei:[
+ {t:"open",en:"öffnen",de:"Datei öffnen",w:"Öffnet eine Datei zum Lesen oder Schreiben.",syn:`f = open("datei.txt", "r")`,err:"Falscher Name oder Ordner: FileNotFoundError.",src:"V6"},
+ {t:"\"r\"",en:"read = lesen",de:"Modus lesen",w:"Öffnet zum Lesen. Ist auch der Standard, wenn du nichts angibst.",src:"V6"},
+ {t:"\"w\"",en:"write = schreiben",de:"Modus schreiben",w:"Öffnet zum Schreiben. Der alte Inhalt wird gelöscht!",src:"V6"},
+ {t:"\"a\"",en:"append = anhängen",de:"Modus anhängen",w:"Schreibt ans Ende der Datei. Der alte Inhalt bleibt.",src:"Ü6",x:1},
+ {t:"with ... as",en:"mit ... als",de:"Datei öffnen und automatisch schließen",w:"Öffnet die Datei für den eingerückten Teil und schließt sie danach von selbst.",syn:`with open("datei.txt", "r") as f:\n    anweisung`,src:"V6"},
+ {t:".read",en:"lesen",de:"alles lesen",w:"Liest die ganze Datei als einen Text.",syn:`inhalt = f.read()`,src:"V6"},
+ {t:".readlines",en:"Zeilen lesen",de:"alle Zeilen als Liste",w:"Liest die Datei. Jede Zeile wird ein Element einer Liste.",syn:`zeilen = f.readlines()`,src:"V6"},
+ {t:".readline",en:"eine Zeile lesen",de:"nächste Zeile lesen",w:"Liest nur die nächste Zeile.",syn:`zeile = f.readline()`,src:"V7"},
+ {t:"for zeile in f",key:"forzeile",en:"für jede Zeile in f",de:"Zeile für Zeile lesen",w:"Geht die Datei Zeile für Zeile durch.",syn:`with open("datei.txt") as f:\n    for zeile in f:\n        print(zeile.rstrip())`,src:"V6"},
+ {t:".write",en:"schreiben",de:"in Datei schreiben",w:"Schreibt Text in die Datei. Neue Zeile selbst mit \\n anhängen.",syn:`f.write("Text\\n")`,err:"f.write(5) gibt einen TypeError. Zahlen erst mit str() umwandeln.",src:"V6"},
+ {t:".close",en:"schließen",de:"Datei schließen",w:"Schließt die Datei. Mit with nicht nötig.",syn:`f.close()`,src:"V6"}
+],
+modul:[
+ {t:"import",en:"importieren, hereinholen",de:"Modul laden",w:"Lädt ein Modul, damit du seine Funktionen nutzen kannst. Steht oben in der Datei.",syn:`import modulname\nmodulname.funktion()`,ex:`import math\nprint(math.sqrt(16))`,out:`4.0`,err:"import vergessen: NameError.",src:"V4"},
+ {t:"from ... import",en:"aus ... importieren",de:"nur bestimmte Teile laden",w:"Holt einzelne Funktionen. Dann schreibst du den Modulnamen nicht davor.",syn:`from modulname import funktion`,ex:`from math import pi\nprint(pi)`,out:`3.141592653589793`,src:"V7"},
+ {t:"import ... as",en:"importieren als",de:"Modul mit Kurznamen",w:"Gibt dem Modul einen kürzeren Namen.",syn:`import modulname as kurz`,ex:`import math as m\nprint(m.pi)`,out:`3.141592653589793`,src:"V7"},
+ {t:"math.pi",en:"Pi",de:"Kreiszahl",w:"Die Zahl Pi aus dem Modul math.",ex:`import math\nr = 2\nprint(round(math.pi * r ** 2, 2))`,out:`12.57`,src:"V4"},
+ {t:"math.sqrt",en:"square root = Quadratwurzel",de:"Wurzel",w:"Zieht die Wurzel. Gut für Pythagoras.",ex:`import math\nprint(math.sqrt(3**2 + 4**2))`,out:`5.0`,src:"V4"},
+ {t:"random.randint",en:"random integer = zufällige ganze Zahl",de:"Zufallszahl",w:"Gibt eine zufällige ganze Zahl von a bis b. Beide Grenzen sind dabei.",syn:`import random\nzahl = random.randint(1, 10)`,src:"V3"},
+ {t:"random.choice",en:"zufällige Auswahl",de:"zufälliges Element",w:"Wählt zufällig ein Element aus einer Liste.",syn:`import random\nsymbol = random.choice(["Stein", "Papier", "Schere"])`,src:"Ü3",x:1},
+ {t:"random.uniform",en:"gleichmäßig zufällig",de:"zufällige Kommazahl",w:"Gibt eine zufällige Kommazahl zwischen a und b.",syn:`import random\nx = random.uniform(0, 100)`,src:"Ü6",x:1},
+ {t:"time.time",en:"Zeit",de:"aktuelle Zeit in Sekunden",w:"Zwei Werte voneinander abziehen ergibt die vergangene Zeit.",syn:`import time\nstart = time.time()\ndauer = time.time() - start`,src:"Ü4",x:1},
+ {t:"pip install",en:"installieren",de:"Zusatzmodul installieren",w:"Installiert ein Modul aus dem Internet. Kommt ins Terminal, nicht in den Code.",syn:`python -m pip install modulname`,src:"V9"}
+],
+fehler:[
+ {t:"try",en:"versuchen",de:"versuchen",w:"Der Code in try wird versucht. Gibt es einen Fehler, springt Python zu except.",syn:`try:\n    anweisung\nexcept Fehlerart:\n    anweisung`,ex:`try:\n    zahl = int("abc")\nexcept ValueError:\n    print("Keine Zahl!")`,out:`Keine Zahl!`,src:"V7"},
+ {t:"except",en:"außer",de:"Fehler abfangen",w:"Läuft nur, wenn im try der passende Fehler auftritt. Das Programm stürzt dann nicht ab.",syn:`except Fehlerart:\n    anweisung`,ex:`try:\n    x = 10 / 0\nexcept ZeroDivisionError:\n    print("Nicht durch 0!")`,out:`Nicht durch 0!`,src:"V7"},
+ {t:"as e",en:"als e",de:"Fehlermeldung speichern",w:"Die Fehlermeldung steht dann in der Variable e.",syn:`except Fehlerart as e:\n    print(e)`,ex:`try:\n    int("Hallo")\nexcept ValueError as e:\n    print("Fehler:", e)`,out:`Fehler: invalid literal for int() with base 10: 'Hallo'`,src:"V7"},
+ {t:"else (try)",key:"else-try",en:"sonst",de:"wenn kein Fehler kam",w:"Läuft nach try, wenn alles geklappt hat.",syn:`try:\n    anweisung\nexcept Fehlerart:\n    anweisung\nelse:\n    anweisung`,src:"V7"},
+ {t:"finally",en:"schließlich, am Ende",de:"läuft immer",w:"Läuft am Ende immer, egal ob ein Fehler kam oder nicht.",syn:`try:\n    anweisung\nexcept Fehlerart:\n    anweisung\nfinally:\n    anweisung`,ex:`try:\n    x = 1 / 0\nexcept ZeroDivisionError:\n    print("Fehler")\nfinally:\n    print("Fertig")`,out:`Fehler\nFertig`,src:"V7"},
+ {t:"raise",en:"hochheben, auslösen",de:"selbst einen Fehler auslösen",w:"Löst absichtlich einen Fehler aus, zum Beispiel bei einer leeren Liste.",syn:`raise ValueError("Meldung")`,ex:`try:\n    raise ValueError("Liste ist leer")\nexcept ValueError as e:\n    print(e)`,out:`Liste ist leer`,src:"V7"}
+],
+meldung:[
+ {t:"SyntaxError",en:"Satzbau-Fehler",de:"Schreibfehler im Code",w:"Python versteht den Code nicht. Oft fehlt ein Doppelpunkt, eine Klammer oder ein Anführungszeichen.",src:"V1"},
+ {t:"IndentationError",en:"Einrückungs-Fehler",de:"falsch eingerückt",w:"Eine Zeile ist nicht oder ungleich eingerückt. Prüfe die Leerzeichen nach dem Doppelpunkt.",src:"V3"},
+ {t:"NameError",en:"Namens-Fehler",de:"Name unbekannt",w:"Python kennt diesen Namen nicht. Oft ein Tippfehler oder die Variable gibt es noch nicht.",ex:`print(alter)`,out:`NameError: name 'alter' is not defined`,src:"V7"},
+ {t:"TypeError",en:"Typ-Fehler",de:"falscher Datentyp",w:"Die Typen passen nicht zusammen, zum Beispiel Text plus Zahl.",ex:`print("5" + 3)`,out:`TypeError: can only concatenate str (not "int") to str`,src:"V2"},
+ {t:"ValueError",en:"Wert-Fehler",de:"falscher Wert",w:"Der Typ stimmt, aber der Wert passt nicht. Zum Beispiel lässt sich \"abc\" nicht in eine Zahl umwandeln.",ex:`int("abc")`,out:`ValueError: invalid literal for int() with base 10: 'abc'`,src:"V2"},
+ {t:"ZeroDivisionError",en:"Null-Teilungs-Fehler",de:"durch 0 geteilt",w:"Es wurde durch 0 geteilt.",ex:`print(5 / 0)`,out:`ZeroDivisionError: division by zero`,src:"V7"},
+ {t:"IndexError",en:"Index-Fehler",de:"Position gibt es nicht",w:"Du willst ein Element an einer Position, die es nicht gibt.",ex:`z = [1, 2, 3]\nprint(z[3])`,out:`IndexError: list index out of range`,src:"V5"},
+ {t:"KeyError",en:"Schlüssel-Fehler",de:"Schlüssel gibt es nicht",w:"Im Dictionary gibt es diesen Schlüssel nicht.",ex:`d = {"a": 1}\nprint(d["b"])`,out:`KeyError: 'b'`,src:"V5"},
+ {t:"FileNotFoundError",en:"Datei-nicht-gefunden-Fehler",de:"Datei fehlt",w:"Die Datei gibt es nicht oder sie liegt in einem anderen Ordner.",ex:`open("gibtesnicht.txt")`,out:`FileNotFoundError: [Errno 2] No such file or directory: 'gibtesnicht.txt'`,src:"V7"},
+ {t:"AttributeError",en:"Eigenschafts-Fehler",de:"Methode gibt es nicht",w:"Das Objekt hat diese Methode nicht.",ex:`zahl = 5\nzahl.append(3)`,out:`AttributeError: 'int' object has no attribute 'append'`,src:"V7"}
+],
+test:[
+ {t:"assert",en:"behaupten, sicherstellen",de:"prüfen",w:"Prüft eine Bedingung. Ist sie False, stoppt das Programm mit AssertionError.",syn:`assert bedingung`,ex:`def doppelt(x):\n    return x * 2\n\nassert doppelt(2) == 4\nprint("Test ok")`,out:`Test ok`,src:"Ü8",x:1},
+ {t:"__name__ == \"__main__\"",key:"main",en:"main = Haupt",de:"nur beim direkten Start",w:"Code darunter läuft nur, wenn du die Datei selbst startest, nicht beim Import.",syn:`if __name__ == "__main__":\n    main()`,src:"V8"},
+ {t:"doctest.testmod",en:"Dokumenten-Test",de:"Tests im Docstring prüfen",w:"Prüft alle Beispiele mit >>> im Docstring. Ist alles richtig, gibt es keine Ausgabe.",syn:`import doctest\n\ndef doppelt(x):\n    """\n    >>> doppelt(2)\n    4\n    """\n    return x * 2\n\nif __name__ == "__main__":\n    doctest.testmod()`,src:"V8"},
+ {t:"assertEqual",en:"sicherstellen, dass gleich",de:"Test auf Gleichheit (unittest)",w:"In einer Testklasse: Test schlägt fehl, wenn die beiden Werte nicht gleich sind.",syn:`self.assertEqual(ergebnis, erwartet)`,src:"V8"}
+]};
+if(typeof module!=="undefined")module.exports={TOPICS,DATA};
+
+const CARDS=[];
+const TNAME={};
+const chOf=c=>c.ch||Math.min(...(String(c.src).match(/\d+/g)||["1"]).map(Number));
+TOPICS.forEach(tp=>{TNAME[tp.id]=tp.name;(DATA[tp.id]||[]).forEach(c=>{c.topic=tp.id;c.id=tp.id+"|"+(c.key||c.t);c.ch=chOf(c);CARDS.push(c)})});
+const KAPS=[...new Set(CARDS.map(c=>c.ch))].sort((a,b)=>a-b);
+const byId=Object.fromEntries(CARDS.map(c=>[c.id,c]));
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const srcText=s=>String(s||"").split(",").map(p=>p.trim()).map(p=>p[0]==="V"?"Vorlesung "+p.slice(1):p[0]==="Ü"?"Übung "+p.slice(1):p).join(", ");
+const KEY="py-befehle-v3";
+let S={box:{},topics:[],size:10,dir:"py",max:0,art:"alle"};
+try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(p&&typeof p==="object")S=Object.assign(S,p)}}catch(e){}
+S.topics=(S.topics||[]).filter(t=>TNAME[t]);
+if(!KAPS.includes(S.max))S.max=0;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}queueCloud()}
+
+/* Speichern im Konto (db), Browser-Speicher bleibt als Sicherung */
+let cloudRef=null,cloudBusy=false,cloudDirty=false,cloudTimer=null;
+const setSync=t=>{const el=document.getElementById("sync");if(el)el.textContent=t};
+const LOCAL_ONLY="Dein Fortschritt wird in diesem Browser gespeichert.";
+function cloudBody(){return {box:S.box,max:S.max,topics:S.topics,size:S.size,dir:S.dir,art:S.art,updated:Date.now()}}
+function queueCloud(){if(!cloudRef)return;cloudDirty=true;clearTimeout(cloudTimer);cloudTimer=setTimeout(flushCloud,1200)}
+async function flushCloud(){
+  cloudTimer=null;
+  if(!cloudRef||cloudBusy||!cloudDirty)return;
+  cloudBusy=true;cloudDirty=false;setSync("Speichert …");
+  try{await cloudRef.set(cloudBody());setSync("Fortschritt ist in deinem Konto gespeichert.")}
+  catch(e){
+    if(e&&e.code==="unavailable"){cloudDirty=true;setTimeout(flushCloud,1500+Math.random()*1500)}
+    else{cloudRef=null;setSync("Speichern im Konto klappt gerade nicht. In diesem Browser ist alles gesichert.")}
+  }finally{cloudBusy=false;if(cloudDirty&&!cloudTimer)cloudTimer=setTimeout(flushCloud,400)}
+}
+async function initCloud(){
+  setSync(LOCAL_ONLY);
+  try{
+    if(!window.claude||typeof window.claude.use!=="function")return;
+    const [db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);
+    if(!db||!user)return;
+    const uid=await user.id();
+    if(!uid)return;
+    const ref=db.doc("data/users/"+uid+"/befehle");
+    const snap=await ref.get();
+    if(snap.exists){
+      const d=snap.data()||{};
+      const before=JSON.stringify([S.max,S.topics,S.art]);
+      S.box=Object.assign({},S.box,d.box||{});
+      ["max","size","dir","art"].forEach(k=>{if(d[k]!==undefined)S[k]=d[k]});
+      if(Array.isArray(d.topics))S.topics=d.topics.filter(t=>TNAME[t]);
+      if(!KAPS.includes(S.max))S.max=0;
+      try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+      renderSettings();renderStats();
+      if(R&&R.done===0&&!flipped&&before!==JSON.stringify([S.max,S.topics,S.art]))startRound();
+      cloudRef=ref;setSync("Fortschritt ist in deinem Konto gespeichert.");
+    }else{
+      cloudRef=ref;cloudDirty=true;flushCloud();
+    }
+  }catch(e){setSync(LOCAL_ONLY)}
+}
+addEventListener("pagehide",()=>{if(cloudDirty)flushCloud()});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&cloudDirty)flushCloud()});
+
+const lvl=c=>S.box[c.id]||0;
+const PRIO={1:0,0:1,2:2,3:3};
+const LV=["Neu","Üben","Fast sicher","Sicher"];
+const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+const ARTS=[["alle","Alles"],["code","Nur Befehle"],["wort","Nur Fachbegriffe"]];
+const artOK=c=>true;
+const inKap=c=>(!S.max||c.ch<=S.max)&&artOK(c);
+function pool(){return CARDS.filter(c=>inKap(c)&&(!S.topics.length||S.topics.includes(c.topic)))}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+let R=null,flipped=false,busy=false;
+const cardEl=$("#card");
+
+/* Stand */
+function renderStats(){
+  const p=pool(),n=[0,0,0,0];p.forEach(c=>n[lvl(c)]++);
+  const tot=p.length||1;
+  $("#bar").innerHTML=[3,2,1,0].map(i=>`<span class="l${i}" style="width:${n[i]/tot*100}%"></span>`).join("");
+  $("#legend").innerHTML=[0,1,2,3].map(i=>`<span><i class="dot l${i}"></i>${LV[i]} <b>${n[i]}</b></span>`).join("")+
+    `<span>von ${p.length} Karten${S.max||S.topics.length?" in deiner Auswahl":""}</span>`;
+  renderAll();
+}
+
+/* Einstellungen */
+function renderSettings(){
+  const cnt=t=>CARDS.filter(c=>c.topic===t&&inKap(c)).length;
+  $("#kap").innerHTML=`<button type="button" data-k="0" aria-pressed="${!S.max}">Alle</button>`+KAPS.map(k=>`<button type="button" data-k="${k}" aria-pressed="${S.max===k}" aria-label="bis Kapitel ${k}">${k}</button>`).join("");
+  const nk=CARDS.filter(inKap).length;
+  $("#kapinfo").textContent=!S.max?`Alle Kapitel, ${nk} Karten.`:S.max===1?`Nur Kapitel 1, ${nk} Karten.`:`Kapitel 1 bis ${S.max}, ${nk} Karten.`;
+  $("#chips").innerHTML=TOPICS.map(t=>{const n=cnt(t.id);return `<button class="chip" type="button" data-t="${t.id}" aria-pressed="${S.topics.includes(t.id)}"${n?"":" disabled"}>${esc(t.name)} <small>${n}</small></button>`}).join("");
+  $("#size").innerHTML=[10,20,"all"].map(v=>`<button type="button" data-v="${v}" aria-pressed="${S.size===v}">${v==="all"?"Alle":v}</button>`).join("");
+  $("#dir").innerHTML=[["py","Python → Deutsch"],["de","Deutsch → Python"]].map(([v,l])=>`<button type="button" data-v="${v}" aria-pressed="${S.dir===v}">${l}</button>`).join("");
+  const artL="";
+  const sel=!S.topics.length?"Alle Themen":S.topics.length===1?TNAME[S.topics[0]]:S.topics.length+" Themen";
+  $("#cur").textContent=`${sel} · ${S.size==="all"?"alle":S.size} Karten · ${S.dir==="py"?"Python → Deutsch":"Deutsch → Python"}${artL}`;
+}
+$("#kap").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.max=+b.dataset.k;S.topics=S.topics.filter(t=>cntK(t));save();renderSettings();renderStats();startRound()});
+const cntK=t=>CARDS.some(c=>c.topic===t&&inKap(c));
+$("#chips").addEventListener("click",e=>{
+  const b=e.target.closest(".chip");if(!b)return;
+  const t=b.dataset.t;
+  S.topics=S.topics.includes(t)?S.topics.filter(x=>x!==t):[...S.topics,t];
+  if(S.topics.length&&TOPICS.filter(t=>cntK(t.id)).every(t=>S.topics.includes(t.id)))S.topics=[];
+  save();renderSettings();renderStats();
+});
+$("#size").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const v=b.dataset.v;S.size=v==="all"?"all":+v;save();renderSettings()});
+$("#dir").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.dir=b.dataset.v;save();renderSettings();if(R&&R.queue.length&&!$("#study").hidden)showCard()});
+$("#startBtn").addEventListener("click",()=>{$("#set").open=false;startRound()});
+
+/* Runde */
+function startRound(ids){
+  let list=ids?CARDS.filter(c=>ids.includes(c.id)):pool();
+  if(!list.length){S.topics=[];save();renderSettings();list=pool()}
+  shuffle(list);
+  if(!ids){list.sort((a,b)=>PRIO[lvl(a)]-PRIO[lvl(b)]);if(S.size!=="all")list=list.slice(0,S.size);shuffle(list)}
+  R={queue:list.map(c=>c.id),total:list.length,done:0,failed:new Set(),firstRight:0};
+  $("#study").hidden=false;$("#done").hidden=true;
+  showCard();
+}
+function head(c,right){return `<div class="kk-head"><span>${esc(TNAME[c.topic])}</span><span>${right}</span></div>`}
+function frontHTML(c){
+  if(S.dir==="py"){
+    return head(c,"Vorderseite")+`<div class="body"><span class="term">${esc(c.t)}</span><p class="prompt">Was heißt das auf Deutsch? Was macht es?</p></div>`;
+  }
+  return head(c,"Vorderseite")+`<div class="body"><p class="de-big">${esc(c.de)}</p><p class="what-front">${esc(c.w)}</p><p class="prompt">Wie schreibt man das in Python?</p></div>`;
+}
+const hlColon=s=>esc(s).replace(/:[ \t]*$/gm,'<b class="colon">:</b>');
+function backHTML(c){
+  let h=head(c,"Rückseite")+`<div class="body"><div class="head-term">${esc(c.t)}</div>`;
+  if(c.en&&c.en.toLowerCase()!==c.de.toLowerCase())h+=`<div class="row"><span class="lbl">Das englische Wort heißt</span><p class="en">${esc(c.en)}</p></div>`;
+  h+=`<div class="row"><span class="lbl">In Python bedeutet es</span><p class="de">${esc(c.de)}</p></div>`;
+  h+=`<div class="row"><span class="lbl">Was macht es?</span><p>${esc(c.w)}</p></div>`;
+  if(c.syn)h+=`<div class="row"><span class="lbl">So schreibst du es</span><pre class="syn">${hlColon(c.syn)}</pre>${/:[ \t]*$/m.test(c.syn)?`<p class="merke">Merke: Am Ende der Zeile steht ein Doppelpunkt <b class="colon">:</b> Die Zeilen darunter rückst du 4 Leerzeichen ein.</p>`:""}</div>`;
+  if(c.ex)h+=`<div class="row"><span class="lbl">Beispiel</span><pre>${esc(c.ex)}</pre></div>`;
+  if(c.out)h+=`<div class="row"><span class="lbl">Ausgabe im Terminal</span><pre class="out">${esc(c.out)}</pre></div>`;
+  if(c.err)h+=`<div class="err"><span class="lbl">Typischer Fehler</span><p>${esc(c.err)}</p></div>`;
+  h+=`<p class="src">Quelle: ${esc(srcText(c.src))}${c.x?` <span class="badge">nicht auf den Folien</span>`:""}</p>`;
+  return h+`</div>`;
+}
+function setActions(){
+  $("#flipBtn").hidden=flipped;$("#noBtn").hidden=!flipped;$("#yesBtn").hidden=!flipped;
+  $("#keys").textContent=flipped?"Taste 1: noch nicht · Taste 2: gewusst":"Leertaste: umdrehen";
+}
+function renderProgress(){
+  const c=byId[R.queue[0]];
+  $("#progTxt").textContent=`Geschafft: ${R.done} von ${R.total}`;
+  $("#progTopic").textContent=c&&R.failed.has(c.id)?"Diese Karte kommt nochmal":"";
+  $("#pfill").style.width=(R.done/R.total*100)+"%";
+}
+function showCard(){
+  flipped=false;busy=false;
+  const c=byId[R.queue[0]];
+  cardEl.className="card front";
+  cardEl.innerHTML=frontHTML(c);
+  cardEl.setAttribute("aria-label","Karte umdrehen");
+  setActions();renderProgress();
+}
+function flip(){
+  if(flipped||busy||!R||!R.queue.length)return;
+  busy=true;const c=byId[R.queue[0]];
+  cardEl.classList.add("half");
+  setTimeout(()=>{
+    cardEl.className="card back";cardEl.innerHTML=backHTML(c);cardEl.removeAttribute("aria-label");
+    flipped=true;setActions();
+    setTimeout(()=>{busy=false},reduce?0:170);
+  },reduce?0:170);
+}
+function rate(known){
+  if(!flipped||busy)return;
+  const id=R.queue.shift();
+  if(known){
+    if(!R.failed.has(id)){S.box[id]=Math.min(3,Math.max(2,(S.box[id]||0)+1));R.firstRight++}
+    R.done++;
+  }else{
+    R.failed.add(id);S.box[id]=1;
+    R.queue.splice(Math.min(3,R.queue.length),0,id);
+  }
+  save();renderStats();
+  if(!R.queue.length){summary();return}
+  showCard();
+  cardEl.focus({preventScroll:true});
+  if(cardEl.getBoundingClientRect().top<0)cardEl.scrollIntoView({block:"start",behavior:reduce?"auto":"smooth"});
+}
+function summary(){
+  $("#study").hidden=true;$("#done").hidden=false;
+  $("#doneTxt").innerHTML=`Beim ersten Versuch gewusst: <b>${R.firstRight} von ${R.total}</b>`;
+  const f=[...R.failed].map(id=>byId[id]);
+  $("#doneList").innerHTML=f.length?`<span class="lbl">Diese Karten übst du am besten nochmal</span><ul class="again">${f.map(c=>`<li><code>${esc(c.t)}</code><span>${esc(c.de)}</span></li>`).join("")}</ul>`:`<p style="margin:0">Alles beim ersten Versuch gewusst. Stark!</p>`;
+  $("#againBtn").hidden=!f.length;
+  $("#done").scrollIntoView({block:"start",behavior:reduce?"auto":"smooth"});
+}
+$("#againBtn").addEventListener("click",()=>startRound([...R.failed]));
+$("#nextBtn").addEventListener("click",()=>startRound());
+cardEl.addEventListener("click",flip);
+$("#flipBtn").addEventListener("click",flip);
+$("#noBtn").addEventListener("click",()=>rate(false));
+$("#yesBtn").addEventListener("click",()=>rate(true));
+document.addEventListener("keydown",e=>{
+  if($("#study").hidden||e.altKey||e.ctrlKey||e.metaKey)return;
+  const tag=e.target.tagName;
+  if(e.key===" "||e.key==="Enter"){
+    if(e.target===document.body||e.target===cardEl){e.preventDefault();if(!flipped)flip()}
+    return;
+  }
+  if(tag==="INPUT"||tag==="TEXTAREA")return;
+  if(flipped&&(e.key==="1"||e.key==="ArrowLeft"))rate(false);
+  if(flipped&&(e.key==="2"||e.key==="ArrowRight"))rate(true);
+});
+
+/* Liste aller Begriffe */
+function renderAll(){
+  if(!$("#all").open)return;
+  $("#allList").innerHTML=TOPICS.map(tp=>`<div class="group"><h3>${esc(tp.name)}</h3><div class="list">${CARDS.filter(c=>c.topic===tp.id).map(c=>`<div class="item"><i class="dot l${lvl(c)}" title="${LV[lvl(c)]}"></i><code>${esc(c.t)}</code><span>${esc(c.de)}</span></div>`).join("")}</div></div>`).join("");
+}
+$("#all").addEventListener("toggle",renderAll);
+
+/* Zurücksetzen mit Bestätigung auf der Seite */
+let resetArmed=null;
+$("#resetBtn").addEventListener("click",e=>{
+  const b=e.currentTarget;
+  if(!resetArmed){b.textContent="Wirklich löschen? Nochmal tippen";b.classList.add("warn");resetArmed=setTimeout(()=>{resetArmed=null;b.textContent="Fortschritt löschen";b.classList.remove("warn")},4000);return}
+  clearTimeout(resetArmed);resetArmed=null;S.box={};save();b.textContent="Gelöscht";b.classList.remove("warn");
+  setTimeout(()=>{b.textContent="Fortschritt löschen"},2000);
+  renderStats();startRound();
+});
+
+renderSettings();renderStats();startRound();
+initCloud();
+</script>
+<script>
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})})}
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+</script>
+</body>
+</html>
