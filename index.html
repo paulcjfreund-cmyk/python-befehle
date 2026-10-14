@@ -142,6 +142,52 @@ pre.out{background:var(--term-bg);color:var(--term-fg)}
 .linkbtn{margin-top:1.25rem;background:none;border:none;color:var(--muted);font-size:.9rem;text-decoration:underline;cursor:pointer;padding:.3rem 0}
 .linkbtn.warn{color:var(--bad)}
 @media (prefers-reduced-motion:reduce){.card,.bar span,.pbar span{transition:none}}
+
+/* Tagesziel */
+.goal{margin-top:.7rem;width:100%;display:flex;align-items:center;gap:.85rem;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:.65rem .9rem;cursor:pointer;text-align:left;box-shadow:var(--shadow)}
+.ring{flex:none;width:2.9rem;height:2.9rem;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:5}
+.ring-bg{stroke:var(--line)}
+.ring-fg{stroke:var(--accent);stroke-linecap:round;stroke-dasharray:113.1;stroke-dashoffset:113.1;transition:stroke-dashoffset .4s}
+.goal.met .ring-fg{stroke:var(--good)}
+.goaltxt{flex:1;min-width:0;display:grid;line-height:1.3}
+.goaltxt .lbl{margin:0}
+.goaltxt b{font-size:1.15rem;font-variant-numeric:tabular-nums}
+.goaltxt small{color:var(--muted);font-size:.86rem}
+.goal.met .goaltxt b{color:var(--good)}
+.plan-link{flex:none;color:var(--accent);font-weight:700;font-size:.92rem}
+/* Plan */
+.planfacts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin:.6rem 0 1rem}
+.fact{background:var(--card);border-radius:12px;padding:.6rem .75rem;display:grid;line-height:1.25}
+.fact b{font-size:1.3rem;font-variant-numeric:tabular-nums}
+.fact small{color:var(--muted);font-size:.82rem}
+.month{background:var(--card);border-radius:12px;padding:.7rem .7rem .8rem;margin-bottom:.6rem}
+.month h3{margin:0 0 .5rem;font-size:.95rem}
+.grid7{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.3rem;text-align:center}
+.wd{font-size:.72rem;color:var(--muted);font-weight:700}
+.day{aspect-ratio:1;max-width:100%;border:none;border-radius:8px;background:transparent;font-size:.85rem;font-variant-numeric:tabular-nums;cursor:pointer;display:grid;place-items:center;padding:0;color:var(--ink)}
+.day.future{color:var(--muted);cursor:default}
+.day.ok{background:var(--good);color:var(--on-good);font-weight:700}
+.day.part{background:var(--bad-soft);color:var(--bad);font-weight:700}
+.day.miss{background:transparent;box-shadow:inset 0 0 0 2px var(--red);color:var(--red)}
+.day.today{outline:2px solid var(--accent);outline-offset:1px}
+.day.target{background:var(--accent);color:var(--on-accent);font-weight:700}
+.day.sel{box-shadow:inset 0 0 0 3px var(--ink)}
+.callegend{display:flex;flex-wrap:wrap;gap:.3rem .9rem;font-size:.82rem;color:var(--muted)}
+.cd{display:inline-block;width:.75rem;height:.75rem;border-radius:3px;margin-right:.3rem;vertical-align:-1px}
+.cd.ok{background:var(--good)} .cd.part{background:var(--bad-soft);box-shadow:inset 0 0 0 1px var(--bad)} .cd.miss{box-shadow:inset 0 0 0 2px var(--red)} .cd.goal-day{background:var(--accent)}
+.daydetail{background:var(--card);border-radius:12px;padding:.65rem .8rem;margin:.75rem 0 0;font-size:.95rem}
+.dateinput{width:100%;font:inherit;padding:.55rem .7rem;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.hint2{margin:.6rem 0 0;font-size:.95rem;color:var(--bad)}
+/* Feier */
+.party{position:fixed;inset:0;z-index:20;background:var(--scrim);display:grid;place-items:center;padding:16px}
+#confetti{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.party-card{position:relative;width:100%;max-width:24rem;background:var(--card);border-radius:20px;padding:1.5rem 1.25rem 1.25rem;text-align:center;display:grid;gap:.6rem;box-shadow:var(--shadow);animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
+.party-card p{margin:0}
+.party-big{font-family:var(--f-mono);font-size:2.6rem;font-weight:600;color:var(--good);line-height:1.1}
+.party-streak{font-weight:700;color:var(--accent)}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.party-card{animation:none}.ring-fg{transition:none}}
 </style>
 
 <div class="wrap">
@@ -151,10 +197,14 @@ pre.out{background:var(--term-bg);color:var(--term-fg)}
       <span class="kaptxt"><b id="kapName"></b><small id="kapSub"></small></span>
       <span class="chev" aria-hidden="true">▾</span>
     </button>
+    <button class="goal" id="goalBtn" type="button" aria-haspopup="dialog">
+      <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle class="ring-bg" cx="22" cy="22" r="18"/><circle class="ring-fg" id="ringFg" cx="22" cy="22" r="18"/></svg>
+      <span class="goaltxt"><span class="lbl">Tagesziel</span><b id="goalNum"></b><small id="goalSub"></small></span>
+      <span class="plan-link">Plan ›</span>
+    </button>
     <section class="stand" aria-label="Dein Lernstand">
       <div class="bar" id="bar"></div>
       <div class="legend" id="legend"></div>
-      <p class="today" id="today"></p>
     </section>
   </header>
 
@@ -178,7 +228,8 @@ pre.out{background:var(--term-bg);color:var(--term-fg)}
     <div class="btns">
       <button class="btn btn-no" id="againBtn" type="button">Nur diese nochmal üben</button>
       <button class="btn btn-main" id="nextBtn" type="button">Nächste Runde</button>
-      <button class="btn btn-ghost" id="extraBtn" type="button" hidden>Trotzdem weiter üben</button>
+      <button class="btn btn-main" id="moreNewBtn" type="button" hidden>5 neue Karten extra</button>
+      <button class="btn btn-ghost" id="extraBtn" type="button" hidden>Trotzdem wiederholen</button>
     </div>
   </section>
 </div>
@@ -186,17 +237,38 @@ pre.out{background:var(--term-bg);color:var(--term-fg)}
 <div class="scrim" id="sheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
     <div class="sheet-head"><h2 id="sheetTitle">Kapitel wählen</h2><button class="close" id="closeSheet" type="button">Fertig</button></div>
-    <p class="hint">Du lernst das Kapitel und wiederholst alle Kapitel davor.</p>
+    <p class="hint">Neue Karten kommen aus diesem Kapitel und den Kapiteln davor. Alles, was du schon gelernt hast, wird weiter wiederholt.</p>
     <div class="klist" id="kapList"></div>
-    <div class="opt">
-      <span class="lbl">Neue Karten pro Tag</span>
-      <div class="seg" id="newSeg"></div>
-    </div>
     <div class="opt">
       <span class="lbl">Richtung</span>
       <div class="seg" id="dir"></div>
     </div>
     <button class="linkbtn" id="resetBtn" type="button">Fortschritt löschen</button>
+  </div>
+</div>
+
+<div class="scrim" id="planSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="planTitle">
+    <div class="sheet-head"><h2 id="planTitle">Dein Plan</h2><button class="close" id="closePlan" type="button">Fertig</button></div>
+    <div class="planfacts" id="planFacts"></div>
+    <div class="cal" id="cal"></div>
+    <div class="callegend"><span><i class="cd ok"></i>Ziel erreicht</span><span><i class="cd part"></i>angefangen</span><span><i class="cd miss"></i>verpasst</span><span><i class="cd goal-day"></i>Prüfungsziel</span></div>
+    <p class="daydetail" id="dayDetail">Tippe auf einen Tag, um zu sehen, was du gemacht hast.</p>
+    <div class="opt">
+      <label class="lbl" for="targetDate">Alles sicher bis</label>
+      <input class="dateinput" type="date" id="targetDate">
+    </div>
+  </div>
+</div>
+
+<div class="party" id="party" hidden>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+  <div class="party-card" role="dialog" aria-modal="true" aria-labelledby="partyTitle">
+    <p class="party-big" id="partyBig"></p>
+    <h2 id="partyTitle">Tagesziel geschafft!</h2>
+    <p id="partyMsg"></p>
+    <p class="party-streak" id="partyStreak"></p>
+    <button class="btn btn-main" id="partyBtn" type="button">Weiter</button>
   </div>
 </div>
 <script>
@@ -415,39 +487,83 @@ const chOf=c=>c.ch||Math.min(...(String(c.src).match(/\d+/g)||["1"]).map(Number)
 TOPICS.forEach((tp,ti)=>{TNAME[tp.id]=tp.name;(DATA[tp.id]||[]).forEach((c,i)=>{c.topic=tp.id;c.id=tp.id+"|"+(c.key||c.t);c.ch=chOf(c);c.ord=ti*1000+i;CARDS.push(c)})});
 const KAPS=[...new Set(CARDS.map(c=>c.ch))].sort((a,b)=>a-b);
 const byId=Object.fromEntries(CARDS.map(c=>[c.id,c]));
+const TOTAL=CARDS.length;
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
 
-/* ---------- Wiederholungsplan wie bei Anki (vereinfacht) ----------
-   Jede gelernte Karte hat eine Stufe s und ein Fälligkeitsdatum due (Tagesnummer).
-   Gewusst: eine Stufe hoch, Abstand wächst. Nicht gewusst: zurück auf Stufe 0 (morgen). */
+/* ---------- Tage ---------- */
+const today=()=>{const d=new Date();return Math.floor((d.getTime()-d.getTimezoneOffset()*60000)/86400000)};
+const dayDate=n=>new Date(n*86400000);
+const fmt=n=>{const d=dayDate(n);return String(d.getUTCDate()).padStart(2,"0")+"."+String(d.getUTCMonth()+1).padStart(2,"0")+"."};
+const fmtY=n=>fmt(n)+dayDate(n).getUTCFullYear();
+const iso=n=>dayDate(n).toISOString().slice(0,10);
+const fromIso=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||"");return m?Date.UTC(+m[1],+m[2]-1,+m[3])/86400000:null};
+const WD=["Mo","Di","Mi","Do","Fr","Sa","So"];
+const MONTHS=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const DEFAULT_TARGET=Date.UTC(2027,0,4)/86400000;
+const BUFFER=14; /* so viele Tage vor dem Ziel sind alle Karten neu gelernt, danach nur noch wiederholen */
+
+/* ---------- Wiederholungsplan wie bei Anki (vereinfacht) ---------- */
 const INTERVALS=[1,3,7,14,30,60,120];
 const MAXS=INTERVALS.length-1;
-const today=()=>{const d=new Date();return Math.floor((d.getTime()-d.getTimezoneOffset()*60000)/86400000)};
 const KEY="py-befehle-v3";
-let S={srs:{},box:{},size:10,dir:"py",max:0,newPerDay:10,newDay:{d:0,n:0}};
+let S={srs:{},box:{},size:10,dir:"py",max:0,plan:null,log:{},day:null};
 try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(p&&typeof p==="object")S=Object.assign(S,p)}}catch(e){}
 if(!KAPS.includes(S.max))S.max=0;
 if(!S.srs||typeof S.srs!=="object")S.srs={};
-/* Alte Stufen (box) einmalig übernehmen: alles ist heute fällig */
+if(!S.log||typeof S.log!=="object")S.log={};
 function migrateBox(box){Object.keys(box||{}).forEach(id=>{if(byId[id]&&!S.srs[id]&&box[id]>0)S.srs[id]={s:Math.max(0,box[id]-1),due:today()}})}
 migrateBox(S.box);S.box={};
+/* Heute schon gelernte Karten aus der alten Version ins Tagebuch übernehmen */
+if(S.newDay&&S.newDay.d===today()&&!S.log[today()])S.log[today()]={n:S.newDay.n,r:0};
+delete S.newDay;delete S.newPerDay;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}queueCloud()}
 
+const learned=()=>CARDS.filter(c=>S.srs[c.id]).length;
 const isNew=c=>!S.srs[c.id];
 const isDue=c=>!isNew(c)&&S.srs[c.id].due<=today();
 function lvl(c){const r=S.srs[c.id];if(!r)return 0;if(r.s===0)return 1;if(r.s<=2)return 2;return 3}
-function newLeft(){if(S.newDay.d!==today())S.newDay={d:today(),n:0};return Math.max(0,(S.newPerDay||10)-S.newDay.n)}
 const dayWord=n=>n===1?"morgen":n<30?"in "+n+" Tagen":n<60?"in 1 Monat":"in "+Math.round(n/30)+" Monaten";
 
-/* Speichern im Claude-Konto, falls die Seite dort läuft. Sonst nur im Gerät. */
+/* ---------- Plan und Tagesziel ----------
+   Soll(t): so viele Karten sollten bis Tag t gelernt sein. Wer einen Tag auslässt,
+   hat am nächsten Tag automatisch mehr neue Karten im Ziel (nachholen). */
+function makePlan(target){S.plan={start:today(),target:target||DEFAULT_TARGET,base:Math.max(0,learned()-((S.log[today()]||{}).n||0))}}
+if(!S.plan||!S.plan.target)makePlan(DEFAULT_TARGET);
+const lastNewDay=()=>Math.max(S.plan.start,S.plan.target-BUFFER);
+function perDay(){const days=lastNewDay()-S.plan.start+1;return Math.max(1,Math.ceil((TOTAL-S.plan.base)/Math.max(1,days)))}
+function soll(t){if(t>=lastNewDay())return TOTAL;return Math.min(TOTAL,S.plan.base+perDay()*(t-S.plan.start+1))}
+const dueAll=()=>CARDS.filter(isDue);
+function ensureDay(){
+  const t=today();
+  if(S.day&&S.day.d===t)return;
+  const lg=S.log[t]||{n:0,r:0};
+  const before=learned()-(lg.n||0);
+  const goalNew=Math.max(0,Math.min(TOTAL-before,soll(t)-before));
+  S.day={d:t,newGoal:goalNew,catchUp:Math.max(0,goalNew-perDay()),dueStart:dueAll().length+(lg.r||0)};
+  S.log[t]=Object.assign({n:0,r:0},lg,{g:goalNew+S.day.dueStart});
+}
+function goalState(){
+  ensureDay();
+  const lg=S.log[S.day.d];
+  const dueNow=dueAll().length;
+  const total=S.day.newGoal+S.day.dueStart;
+  const doneNew=Math.min(S.day.newGoal,lg.n||0);
+  const doneRev=Math.max(0,Math.min(S.day.dueStart,S.day.dueStart-dueNow));
+  const met=(lg.n||0)>=S.day.newGoal&&dueNow===0;
+  return {total,done:met?total:Math.min(total,doneNew+doneRev),met,newLeft:Math.max(0,S.day.newGoal-(lg.n||0)),dueNow};
+}
+function logAct(kind){const t=today();ensureDay();const lg=S.log[t];lg[kind]=(lg[kind]||0)+1}
+function streak(){let n=0,t=today();if(!(S.log[t]&&S.log[t].ok))t--;while(S.log[t]&&S.log[t].ok){n++;t--}return n}
+
+/* ---------- Speichern im Claude-Konto, falls die Seite dort läuft ---------- */
 let cloudRef=null,cloudBusy=false,cloudDirty=false,cloudTimer=null;
 function queueCloud(){if(!cloudRef)return;cloudDirty=true;clearTimeout(cloudTimer);cloudTimer=setTimeout(flushCloud,1200)}
 async function flushCloud(){
   cloudTimer=null;if(!cloudRef||cloudBusy||!cloudDirty)return;
   cloudBusy=true;cloudDirty=false;
-  try{await cloudRef.set({srs:S.srs,max:S.max,dir:S.dir,newPerDay:S.newPerDay,newDay:S.newDay,updated:Date.now()})}
+  try{await cloudRef.set({srs:S.srs,max:S.max,dir:S.dir,plan:S.plan,log:S.log,day:S.day,updated:Date.now()})}
   catch(e){if(e&&e.code==="unavailable"){cloudDirty=true;setTimeout(flushCloud,1500+Math.random()*1500)}else cloudRef=null}
   finally{cloudBusy=false;if(cloudDirty&&!cloudTimer)cloudTimer=setTimeout(flushCloud,400)}
 }
@@ -460,10 +576,10 @@ async function initCloud(){
     if(snap.exists){
       const d=snap.data()||{};
       if(d.srs)S.srs=Object.assign({},S.srs,d.srs);if(d.box)migrateBox(d.box);
-      ["max","dir","newPerDay"].forEach(k=>{if(d[k]!==undefined)S[k]=d[k]});
-      if(d.newDay&&d.newDay.d===today()&&d.newDay.n>S.newDay.n)S.newDay=d.newDay;
+      if(d.log)Object.keys(d.log).forEach(k=>{if(!S.log[k]||(d.log[k].n||0)+(d.log[k].r||0)>(S.log[k].n||0)+(S.log[k].r||0))S.log[k]=d.log[k]});
+      if(d.plan)S.plan=d.plan;["max","dir"].forEach(k=>{if(d[k]!==undefined)S[k]=d[k]});
       if(!KAPS.includes(S.max))S.max=0;
-      try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+      S.day=null;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
       renderHead();if(R&&R.done===0&&!flipped)startRound();
       cloudRef=ref;
     }else{cloudRef=ref;cloudDirty=true;flushCloud()}
@@ -474,58 +590,147 @@ addEventListener("pagehide",()=>{if(cloudDirty)flushCloud()});
 const LV=["Neu","Üben","Fast sicher","Sicher"];
 const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
 const inKap=c=>!S.max||c.ch<=S.max;
-const pool=()=>CARDS.filter(inKap);
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-const dueCards=()=>shuffle(pool().filter(isDue)).sort((a,b)=>S.srs[a.id].due-S.srs[b.id].due);
-const newCards=()=>pool().filter(isNew).sort((a,b)=>a.ch-b.ch||a.ord-b.ord);
+const dueCards=()=>shuffle(dueAll()).sort((a,b)=>S.srs[a.id].due-S.srs[b.id].due);
+const newCards=()=>CARDS.filter(c=>isNew(c)&&inKap(c)).sort((a,b)=>a.ch-b.ch||a.ord-b.ord);
 
 let R=null,flipped=false,busy=false;
 const cardEl=$("#card");
 
-/* Kopf: Kapitel, Fortschritt, heute */
+/* ---------- Kopf ---------- */
 function renderHead(){
-  const p=pool(),n=[0,0,0,0];p.forEach(c=>n[lvl(c)]++);
-  const tot=p.length||1;
-  $("#bar").innerHTML=[3,2,1,0].map(i=>`<span class="l${i}" style="width:${n[i]/tot*100}%"></span>`).join("");
+  const n=[0,0,0,0];CARDS.forEach(c=>n[lvl(c)]++);
+  $("#bar").innerHTML=[3,2,1,0].map(i=>`<span class="l${i}" style="width:${n[i]/TOTAL*100}%"></span>`).join("");
   $("#legend").innerHTML=[0,1,2,3].map(i=>`<span><i class="dot l${i}"></i>${LV[i]} <b>${n[i]}</b></span>`).join("");
-  const due=p.filter(isDue).length,nl=Math.min(newLeft(),p.filter(isNew).length);
-  $("#today").innerHTML=`Heute: <b>${due}</b> wiederholen · <b>${nl}</b> neue`;
   if(S.max){
     $("#kapNum").textContent=S.max;
     $("#kapName").textContent="Kapitel "+S.max+": "+KAPNAMES[S.max][0];
-    $("#kapSub").textContent=(S.max>1?"mit Wiederholung von Kapitel 1"+(S.max>2?" bis "+(S.max-1):"")+" · ":"")+p.length+" Karten";
-  }else{
-    $("#kapNum").textContent="∑";$("#kapName").textContent="Alle Kapitel";$("#kapSub").textContent=p.length+" Karten";
-  }
+    $("#kapSub").textContent=S.max>1?"neue Karten aus Kapitel 1 bis "+S.max:"neue Karten aus Kapitel 1";
+  }else{$("#kapNum").textContent="∑";$("#kapName").textContent="Alle Kapitel";$("#kapSub").textContent=TOTAL+" Karten"}
+  const g=goalState();
+  $("#goalNum").textContent=g.met?"Geschafft ✓":`${g.done} von ${g.total}`;
+  const left=S.plan.target-today();
+  let sub=g.met?(streak()>1?streak()+" Tage in Folge":"Morgen geht es weiter"):`${g.newLeft} neue · ${g.dueNow} wiederholen`;
+  if(!g.met&&S.day.catchUp>0)sub+=` · davon ${S.day.catchUp} nachholen`;
+  sub+=left>0?` · noch ${left} Tage`:"";
+  $("#goalSub").textContent=sub;
+  $("#goalBtn").classList.toggle("met",g.met);
+  $("#ringFg").style.strokeDashoffset=113.1*(1-(g.total?g.done/g.total:1));
 }
 
-/* Kapitel-Blatt */
+/* ---------- Kapitel-Blatt ---------- */
 function renderSheet(){
   const own=k=>CARDS.filter(c=>c.ch===k).length;
   $("#kapList").innerHTML=KAPS.map(k=>`<button class="krow" type="button" data-k="${k}" aria-pressed="${S.max===k}"><span class="num">${k}</span><span class="kaptxt"><b>${esc(KAPNAMES[k][0])}</b><small>${esc(KAPNAMES[k][1])}</small></span><span class="kcount">${own(k)} Karten</span></button>`).join("")+
-    `<button class="krow" type="button" data-k="0" aria-pressed="${!S.max}"><span class="num">∑</span><span class="kaptxt"><b>Alle Kapitel</b><small>alles gemischt</small></span><span class="kcount">${CARDS.length}</span></button>`;
-  $("#newSeg").innerHTML=[5,10,20].map(v=>`<button type="button" data-v="${v}" aria-pressed="${(S.newPerDay||10)===v}">${v}</button>`).join("");
+    `<button class="krow" type="button" data-k="0" aria-pressed="${!S.max}"><span class="num">∑</span><span class="kaptxt"><b>Alle Kapitel</b><small>alles gemischt</small></span><span class="kcount">${TOTAL}</span></button>`;
   $("#dir").innerHTML=[["py","Python → Deutsch"],["de","Deutsch → Python"]].map(([v,l])=>`<button type="button" data-v="${v}" aria-pressed="${S.dir===v}">${l}</button>`).join("");
 }
-function openSheet(){renderSheet();$("#sheet").hidden=false;document.body.style.overflow="hidden";setTimeout(()=>$("#closeSheet").focus(),0)}
-function closeSheet(){$("#sheet").hidden=true;document.body.style.overflow="";$("#kapBtn").focus()}
-$("#kapBtn").addEventListener("click",openSheet);
-$("#closeSheet").addEventListener("click",closeSheet);
-$("#sheet").addEventListener("click",e=>{if(e.target.id==="sheet")closeSheet()});
-$("#kapList").addEventListener("click",e=>{const b=e.target.closest(".krow");if(!b)return;S.max=+b.dataset.k;save();renderHead();startRound();closeSheet()});
-$("#newSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.newPerDay=+b.dataset.v;save();renderSheet();renderHead();if(R&&R.done===0&&!flipped)startRound()});
+let lastFocus=null;
+function openLayer(id,render){lastFocus=document.activeElement;render();$(id).hidden=false;document.body.style.overflow="hidden";setTimeout(()=>{const b=$(id+" .close")||$(id+" .btn");if(b)b.focus()},0)}
+function closeLayer(id){$(id).hidden=true;document.body.style.overflow="";if(lastFocus&&lastFocus.focus)lastFocus.focus()}
+$("#kapBtn").addEventListener("click",()=>openLayer("#sheet",renderSheet));
+$("#closeSheet").addEventListener("click",()=>closeLayer("#sheet"));
+$("#sheet").addEventListener("click",e=>{if(e.target.id==="sheet")closeLayer("#sheet")});
+$("#kapList").addEventListener("click",e=>{const b=e.target.closest(".krow");if(!b)return;S.max=+b.dataset.k;save();renderHead();startRound();closeLayer("#sheet")});
 $("#dir").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.dir=b.dataset.v;save();renderSheet();if(R&&R.queue.length&&!$("#study").hidden)showCard()});
 
-/* Runde: erst fällige Karten, dann neue (bis zum Tageslimit). Extra-Runde: freiwillig üben, ändert den Plan nur bei Fehlern. */
-function startRound(ids,extra){
+/* ---------- Plan-Blatt mit Kalender ---------- */
+function dayClass(t){
+  const lg=S.log[t],now=today();
+  if(t===S.plan.target)return "target";
+  if(t>now)return "future";
+  if(lg&&lg.ok)return "ok";
+  if(lg&&((lg.n||0)+(lg.r||0))>0)return "part";
+  if(t<now&&t>=S.plan.start)return "miss";
+  return "";
+}
+function renderPlan(){
+  const t=today(),sure=CARDS.filter(c=>lvl(c)===3).length,missed=[];
+  for(let d=S.plan.start;d<t;d++)if(dayClass(d)==="miss")missed.push(d);
+  $("#planFacts").innerHTML=
+    `<div class="fact"><small>Sicher</small><b>${sure} / ${TOTAL}</b></div>`+
+    `<div class="fact"><small>Tage bis zum Ziel</small><b>${Math.max(0,S.plan.target-t)}</b></div>`+
+    `<div class="fact"><small>Neue Karten pro Tag</small><b>${t>lastNewDay()?0:perDay()}</b></div>`+
+    `<div class="fact"><small>In Folge geschafft</small><b>${streak()} ${streak()===1?"Tag":"Tage"}</b></div>`+
+    `<div class="fact" style="grid-column:1/-1"><small>So läuft dein Plan</small>Bis ${fmt(lastNewDay())} lernst du alle ${TOTAL} Karten neu. Danach wiederholst du nur noch, bis am ${fmtY(S.plan.target)} alles sicher sitzt.${missed.length?` Verpasste Tage: ${missed.length}. Die Karten davon sind in deinem Tagesziel zum Nachholen.`:""}</div>`;
+  /* Monate von Planstart bis Ziel */
+  const first=dayDate(Math.min(S.plan.start,t)),last=dayDate(S.plan.target);
+  let y=first.getUTCFullYear(),m=first.getUTCMonth(),html="";
+  while(y<last.getUTCFullYear()||(y===last.getUTCFullYear()&&m<=last.getUTCMonth())){
+    const d1=Date.UTC(y,m,1)/86400000,dim=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+    const off=(dayDate(d1).getUTCDay()+6)%7;
+    html+=`<div class="month"><h3>${MONTHS[m]} ${y}</h3><div class="grid7">${WD.map(w=>`<span class="wd">${w}</span>`).join("")}${"<span></span>".repeat(off)}`;
+    for(let i=0;i<dim;i++){const d=d1+i,cl=dayClass(d);html+=`<button type="button" class="day ${cl}${d===t?" today":""}" data-d="${d}" aria-label="${fmtY(d)}">${i+1}</button>`}
+    html+=`</div></div>`;
+    if(++m>11){m=0;y++}
+  }
+  $("#cal").innerHTML=html;
+  $("#targetDate").value=iso(S.plan.target);$("#targetDate").min=iso(t+BUFFER+1);
+  $("#dayDetail").textContent="Tippe auf einen Tag, um zu sehen, was du gemacht hast.";
+}
+function dayText(d){
+  const lg=S.log[d],t=today(),cl=dayClass(d);
+  if(d===S.plan.target)return `${fmtY(d)}: Dein Ziel. Bis hier sollen alle Karten sicher sitzen.`;
+  if(d>t){return d<=lastNewDay()?`${fmtY(d)}: Geplant sind ${perDay()} neue Karten plus die fälligen Wiederholungen.`:`${fmtY(d)}: Nur noch wiederholen.`}
+  if(!lg||((lg.n||0)+(lg.r||0))===0)return d<S.plan.start?`${fmtY(d)}: Vor deinem Plan.`:`${fmtY(d)}: Nichts gemacht. Die Karten von diesem Tag holst du im Tagesziel nach.`;
+  return `${fmtY(d)}: ${lg.n||0} neue Karten gelernt, ${lg.r||0} wiederholt. ${cl==="ok"?"Tagesziel erreicht.":d===t?"Tagesziel noch offen.":"Tagesziel nicht ganz geschafft."}`;
+}
+$("#goalBtn").addEventListener("click",()=>openLayer("#planSheet",renderPlan));
+$("#closePlan").addEventListener("click",()=>closeLayer("#planSheet"));
+$("#planSheet").addEventListener("click",e=>{if(e.target.id==="planSheet")closeLayer("#planSheet")});
+$("#cal").addEventListener("click",e=>{const b=e.target.closest(".day");if(!b)return;$("#cal").querySelectorAll(".sel").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");$("#dayDetail").textContent=dayText(+b.dataset.d)});
+$("#targetDate").addEventListener("change",e=>{const v=fromIso(e.target.value);if(v===null||v<=today()+BUFFER){e.target.value=iso(S.plan.target);return}makePlan(v);S.day=null;save();renderPlan();renderHead()});
+
+/* ---------- Feier, wenn das Tagesziel erreicht ist ---------- */
+const CHEERS=[
+ ["print(\"Stark!\")","Stark gemacht. Dein Gehirn hat heute wieder Python gelernt."],
+ ["return True","Ziel erreicht. Genau so kommst du sicher durch die Klausur."],
+ ["while lernen:","Dranbleiben lohnt sich. Morgen geht es weiter."],
+ ["if ziel:","Geschafft! Jeder Tag macht dich sicherer."],
+ ["break","Feierabend für heute. Das hast du dir verdient."],
+ ["x += 1","Wieder ein Tag mehr. Kleine Schritte bringen dich ans Ziel."],
+ ["True","Alles erledigt. Du bist im Plan."]
+];
+function confetti(){
+  if(reduce)return;
+  const cv=$("#confetti"),ctx=cv.getContext("2d"),dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth,H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;ctx.scale(dpr,dpr);
+  const css=getComputedStyle(document.documentElement);
+  const cols=["--accent","--good","--red","--mid","--bad"].map(v=>css.getPropertyValue(v).trim()||"#1D5BA6");
+  const P=Array.from({length:120},()=>({x:W/2+(Math.random()-.5)*W*.3,y:H*.35,vx:(Math.random()-.5)*9,vy:-Math.random()*11-4,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.3,w:6+Math.random()*6,h:4+Math.random()*4,c:cols[Math.floor(Math.random()*cols.length)]}));
+  const t0=performance.now();
+  (function step(now){
+    const el=now-t0;ctx.clearRect(0,0,W,H);
+    P.forEach(p=>{p.vy+=.28;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.globalAlpha=Math.max(0,1-el/3200);ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore()});
+    if(el<3200&&!$("#party").hidden)requestAnimationFrame(step);else ctx.clearRect(0,0,W,H);
+  })(t0);
+}
+function celebrate(){
+  const c=CHEERS[Math.floor(Math.random()*CHEERS.length)],st=streak();
+  $("#partyBig").textContent=c[0];$("#partyMsg").textContent=c[1];
+  $("#partyStreak").textContent=st>1?`${st} Tage in Folge geschafft`:"Der erste Tag deiner Serie";
+  lastFocus=document.activeElement;$("#party").hidden=false;setTimeout(()=>$("#partyBtn").focus(),0);confetti();
+}
+$("#partyBtn").addEventListener("click",()=>{$("#party").hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus()});
+function checkGoal(){
+  const g=goalState(),lg=S.log[today()];
+  if(g.met&&!lg.ok){lg.ok=true;save();renderHead();celebrate();return true}
+  return false;
+}
+
+/* ---------- Runden ----------
+   normal: fällige Wiederholungen, dann neue Karten bis zum Tagesziel.
+   extra: freiwillig wiederholen (ändert den Plan nur bei Fehlern). morenew: 5 neue Karten extra. */
+function startRound(ids,mode){
+  ensureDay();
   let list;
   if(ids)list=ids.map(id=>byId[id]);
-  else if(extra)list=shuffle(pool().filter(c=>!isNew(c))).sort((a,b)=>S.srs[a.id].s-S.srs[b.id].s).slice(0,10);
-  else list=dueCards().concat(newCards().slice(0,newLeft())).slice(0,S.size||10);
-  if(!ids&&!extra&&!list.length){finished();return}
+  else if(mode==="extra")list=shuffle(CARDS.filter(c=>!isNew(c))).sort((a,b)=>S.srs[a.id].s-S.srs[b.id].s).slice(0,10);
+  else if(mode==="morenew")list=newCards().slice(0,5);
+  else list=dueCards().concat(newCards().slice(0,goalState().newLeft)).slice(0,S.size||10);
   if(!list.length){finished();return}
-  if(!ids)shuffle(list);
-  R={queue:list.map(c=>c.id),total:list.length,done:0,failed:new Set(),firstRight:0,extra:!!extra};
+  if(!ids&&mode!=="morenew")shuffle(list);
+  R={queue:list.map(c=>c.id),total:list.length,done:0,failed:new Set(),firstRight:0,extra:mode==="extra"||!!ids};
   $("#study").hidden=false;$("#done").hidden=true;
   showCard();
 }
@@ -547,7 +752,6 @@ function backHTML(c){
   if(c.err)h+=`<div class="err"><span class="lbl">Typischer Fehler</span><p>${esc(c.err)}</p></div>`;
   return h+`</div>`;
 }
-/* Nächster Abstand, wenn "Gewusst" getippt wird */
 function nextStep(c){
   if(R.failed.has(c.id))return 0;
   const r=S.srs[c.id];
@@ -560,7 +764,7 @@ function setActions(){
 }
 function renderProgress(){
   const c=byId[R.queue[0]];
-  $("#progTxt").textContent=(R.extra?"Extra-Runde · ":"")+`${R.done} von ${R.total} geschafft`;
+  $("#progTxt").textContent=(R.extra?"Extra · ":"")+`${R.done} von ${R.total} geschafft`;
   $("#progTopic").textContent=c&&R.failed.has(c.id)?"kommt nochmal":"";
   $("#pfill").style.width=(R.done/R.total*100)+"%";
 }
@@ -577,7 +781,8 @@ function flip(){
 function rate(known){
   if(!flipped||busy)return;
   const id=R.queue.shift(),c=byId[id],t=today();
-  if(isNew(c)){if(S.newDay.d!==t)S.newDay={d:t,n:0};S.newDay.n++}
+  ensureDay();
+  if(isNew(c))logAct("n");else if(!R.failed.has(id)&&S.srs[id].due<=t)logAct("r");
   if(known){
     const s=nextStep(c);
     if(!R.extra||R.failed.has(id))S.srs[id]={s,due:t+INTERVALS[s]};
@@ -592,54 +797,64 @@ function rate(known){
   showCard();cardEl.focus({preventScroll:true});
   if(cardEl.getBoundingClientRect().top<0)cardEl.scrollIntoView({block:"start",behavior:reduce?"auto":"smooth"});
 }
-function moreToday(){return pool().some(isDue)||(newLeft()>0&&pool().some(isNew))}
-function tomorrowCount(){const t=today()+1;return pool().filter(c=>!isNew(c)&&S.srs[c.id].due<=t).length}
+function tomorrowCount(){const t=today()+1;return CARDS.filter(c=>!isNew(c)&&S.srs[c.id].due<=t).length}
+function doneButtons(g){
+  const canMore=g.met||g.newLeft===0;
+  $("#nextBtn").hidden=g.met||(g.dueNow===0&&(g.newLeft===0||!newCards().length));
+  $("#moreNewBtn").hidden=!(g.met&&newCards().length);
+  $("#extraBtn").hidden=!(g.met&&CARDS.some(c=>!isNew(c)));
+  let hint="";
+  if(!g.met&&g.dueNow===0&&g.newLeft>0&&!newCards().length)hint=`<p class="hint2">Dir fehlen noch ${g.newLeft} neue Karten fürs Tagesziel. Wähle oben ein höheres Kapitel, dann kommen weitere Karten.</p>`;
+  return hint;
+}
 function summary(){
   $("#study").hidden=true;$("#done").hidden=false;
-  const more=moreToday();
-  $("#doneTitle").textContent=more?"Runde geschafft":"Für heute geschafft";
-  $("#doneTxt").innerHTML=`Beim ersten Versuch gewusst: <b>${R.firstRight} von ${R.total}</b>`+(more?"":`<br>Morgen sind <b>${tomorrowCount()}</b> Karten fällig.`);
+  const goalNow=checkGoal(),g=goalState();
+  $("#doneTitle").textContent=g.met?"Tagesziel geschafft":"Runde geschafft";
+  $("#doneTxt").innerHTML=`Beim ersten Versuch gewusst: <b>${R.firstRight} von ${R.total}</b>`+(g.met?`<br>Morgen sind <b>${tomorrowCount()}</b> Karten fällig.`:`<br>Noch offen: <b>${g.newLeft}</b> neue, <b>${g.dueNow}</b> wiederholen.`);
   const f=[...R.failed].map(id=>byId[id]);
-  $("#doneList").innerHTML=f.length?`<span class="lbl">Nochmal üben</span><ul class="again">${f.map(c=>`<li><code>${esc(c.t)}</code><span>${esc(c.de)}</span></li>`).join("")}</ul>`:"";
+  $("#doneList").innerHTML=(f.length?`<span class="lbl">Nochmal üben</span><ul class="again">${f.map(c=>`<li><code>${esc(c.t)}</code><span>${esc(c.de)}</span></li>`).join("")}</ul>`:"")+doneButtons(g);
   $("#againBtn").hidden=!f.length;
-  $("#nextBtn").hidden=!more;
-  $("#extraBtn").hidden=more||!pool().some(c=>!isNew(c));
-  window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});
+  if(!goalNow)window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});
 }
 function finished(){
   $("#study").hidden=true;$("#done").hidden=false;
-  $("#doneTitle").textContent="Für heute geschafft";
-  $("#doneTxt").innerHTML=`Heute ist nichts mehr fällig. Morgen sind <b>${tomorrowCount()}</b> Karten dran.`;
-  $("#doneList").innerHTML="";$("#againBtn").hidden=true;$("#nextBtn").hidden=true;
-  $("#extraBtn").hidden=!pool().some(c=>!isNew(c));
+  checkGoal();const g=goalState();
+  $("#doneTitle").textContent=g.met?"Für heute geschafft":"Keine Karten mehr";
+  $("#doneTxt").innerHTML=g.met?`Heute ist nichts mehr fällig. Morgen sind <b>${tomorrowCount()}</b> Karten dran.`:"";
+  $("#doneList").innerHTML=doneButtons(g);$("#againBtn").hidden=true;
 }
-$("#againBtn").addEventListener("click",()=>startRound([...R.failed],true));
+$("#againBtn").addEventListener("click",()=>startRound([...R.failed]));
 $("#nextBtn").addEventListener("click",()=>startRound());
-$("#extraBtn").addEventListener("click",()=>startRound(null,true));
+$("#extraBtn").addEventListener("click",()=>startRound(null,"extra"));
+$("#moreNewBtn").addEventListener("click",()=>startRound(null,"morenew"));
 cardEl.addEventListener("click",flip);
 $("#flipBtn").addEventListener("click",flip);
 $("#noBtn").addEventListener("click",()=>rate(false));
 $("#yesBtn").addEventListener("click",()=>rate(true));
 document.addEventListener("keydown",e=>{
-  if(!$("#sheet").hidden){if(e.key==="Escape")closeSheet();return}
+  if(!$("#party").hidden){if(e.key==="Escape"||e.key==="Enter"){e.preventDefault();$("#partyBtn").click()}return}
+  if(!$("#sheet").hidden){if(e.key==="Escape")closeLayer("#sheet");return}
+  if(!$("#planSheet").hidden){if(e.key==="Escape")closeLayer("#planSheet");return}
   if($("#study").hidden||e.altKey||e.ctrlKey||e.metaKey)return;
   if(e.key===" "||e.key==="Enter"){if(e.target===document.body||e.target===cardEl){e.preventDefault();if(!flipped)flip()}return}
   if(flipped&&(e.key==="1"||e.key==="ArrowLeft"))rate(false);
   if(flipped&&(e.key==="2"||e.key==="ArrowRight"))rate(true);
 });
 /* Neuer Tag, während die App offen ist */
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){renderHead();if(!$("#done").hidden&&moreToday())startRound()}});
+let shownDay=today();
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;if(today()!==shownDay){shownDay=today();save();renderHead();startRound()}else renderHead()});
 
 /* Zurücksetzen mit Bestätigung auf der Seite */
 let resetArmed=null;
 $("#resetBtn").addEventListener("click",e=>{
   const b=e.currentTarget;
-  if(!resetArmed){b.textContent="Wirklich löschen? Nochmal tippen";b.classList.add("warn");resetArmed=setTimeout(()=>{resetArmed=null;b.textContent="Fortschritt löschen";b.classList.remove("warn")},4000);return}
-  clearTimeout(resetArmed);resetArmed=null;S.srs={};S.newDay={d:today(),n:0};save();b.textContent="Gelöscht";b.classList.remove("warn");
+  if(!resetArmed){b.textContent="Wirklich alles löschen? Nochmal tippen";b.classList.add("warn");resetArmed=setTimeout(()=>{resetArmed=null;b.textContent="Fortschritt löschen";b.classList.remove("warn")},4000);return}
+  clearTimeout(resetArmed);resetArmed=null;S.srs={};S.log={};S.day=null;makePlan(S.plan.target);save();b.textContent="Gelöscht";b.classList.remove("warn");
   setTimeout(()=>{b.textContent="Fortschritt löschen"},2000);renderHead();startRound();
 });
 
-save();renderHead();startRound();initCloud();
+ensureDay();save();renderHead();startRound();initCloud();
 </script>
 <script>
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})})}
