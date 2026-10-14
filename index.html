@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="Python">
 <meta name="theme-color" content="#1D5BA6">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png?v=2">
+<link rel="icon" href="icon-192.png?v=2">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -252,6 +252,16 @@ pre.out{background:var(--term-bg);color:var(--term-fg)}
     <div class="opt">
       <span class="lbl">Richtung</span>
       <div class="seg" id="dir"></div>
+    </div>
+    <div class="opt">
+      <span class="lbl">Fortschritt übertragen</span>
+      <p class="hint" style="margin:0 0 .5rem">Für ein neues Handy oder ein neues App-Symbol: Code kopieren, in der neuen App einfügen.</p>
+      <div class="seg"><button type="button" id="copyBtn">Code kopieren</button><button type="button" id="pasteToggle">Code einfügen</button></div>
+      <div id="pasteBox" hidden style="margin-top:.5rem">
+        <textarea id="pasteArea" rows="3" style="width:100%;font:inherit;font-size:.85rem;padding:.5rem;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)" placeholder="Code hier einfügen"></textarea>
+        <button type="button" class="btn btn-main" id="importBtn" style="width:100%;margin-top:.4rem">Fortschritt übernehmen</button>
+      </div>
+      <p class="hint" id="xferMsg" aria-live="polite" style="margin:.4rem 0 0"></p>
     </div>
     <button class="linkbtn" id="resetBtn" type="button">Fortschritt löschen</button>
   </div>
@@ -686,6 +696,26 @@ document.addEventListener("keydown",e=>{
 /* Neuer Tag, während die App offen ist */
 let shownDay=today();
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;if(today()!==shownDay){shownDay=today();save();renderHead();startRound()}else renderHead()});
+
+/* Fortschritt übertragen: als Text-Code kopieren und woanders einfügen */
+function exportCode(){return "PYK1:"+btoa(unescape(encodeURIComponent(JSON.stringify({srs:S.srs,log:S.log,plan:S.plan,max:S.max,dir:S.dir}))))}
+$("#copyBtn").addEventListener("click",()=>{
+  const code=exportCode();
+  const done=()=>{$("#xferMsg").textContent="Code kopiert. Öffne die neue App, tippe auf „Code einfügen“ und füge ihn ein."};
+  const fallback=()=>{$("#pasteBox").hidden=false;$("#pasteArea").value=code;$("#pasteArea").select();$("#xferMsg").textContent="Markiere den Code im Feld und kopiere ihn."};
+  try{navigator.clipboard.writeText(code).then(done,fallback)}catch(e){fallback()}
+});
+$("#pasteToggle").addEventListener("click",()=>{$("#pasteBox").hidden=!$("#pasteBox").hidden;$("#pasteArea").value="";$("#xferMsg").textContent=""});
+$("#importBtn").addEventListener("click",()=>{
+  try{
+    const raw=$("#pasteArea").value.trim();if(!raw.startsWith("PYK1:"))throw 0;
+    const d=JSON.parse(decodeURIComponent(escape(atob(raw.slice(5)))));
+    if(!d||typeof d.srs!=="object")throw 0;
+    S.srs=d.srs;S.log=d.log||{};if(d.plan)S.plan=d.plan;if(d.max!==undefined)S.max=d.max;if(d.dir)S.dir=d.dir;
+    if(!KAPS.includes(S.max))S.max=0;S.day=null;save();renderHead();renderSheet();startRound();
+    $("#pasteBox").hidden=true;$("#xferMsg").textContent="Übernommen: "+Object.keys(S.srs).length+" gelernte Karten.";
+  }catch(e){$("#xferMsg").textContent="Der Code passt nicht. Kopiere ihn bitte noch einmal komplett."}
+});
 
 /* Zurücksetzen mit Bestätigung auf der Seite */
 let resetArmed=null;
