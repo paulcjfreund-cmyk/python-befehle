@@ -107,6 +107,10 @@ pre.out{background:var(--term-bg);color:var(--term-fg)}
 .btn-main{background:var(--accent);color:var(--on-accent);grid-column:1/-1}
 .btn-no{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
 .btn-yes{background:var(--good);color:var(--on-good)}
+.btn small{display:block;font-weight:400;font-size:.8rem;opacity:.85;margin-top:.15rem}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.today{margin:.1rem 0 0;font-size:.95rem}
+.today b{font-variant-numeric:tabular-nums}
 
 /* Rundenende */
 .done{margin-top:1.1rem;background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:1.25rem;display:grid;gap:1rem}
@@ -150,6 +154,7 @@ pre.out{background:var(--term-bg);color:var(--term-fg)}
     <section class="stand" aria-label="Dein Lernstand">
       <div class="bar" id="bar"></div>
       <div class="legend" id="legend"></div>
+      <p class="today" id="today"></p>
     </section>
   </header>
 
@@ -161,18 +166,19 @@ pre.out{background:var(--term-bg);color:var(--term-fg)}
     </div>
     <div class="actions">
       <button class="btn btn-main" id="flipBtn" type="button">Umdrehen</button>
-      <button class="btn btn-no" id="noBtn" type="button" hidden>Noch nicht</button>
-      <button class="btn btn-yes" id="yesBtn" type="button" hidden>Gewusst</button>
+      <button class="btn btn-no" id="noBtn" type="button" hidden>Noch nicht<small id="noSub"></small></button>
+      <button class="btn btn-yes" id="yesBtn" type="button" hidden>Gewusst<small id="yesSub"></small></button>
     </div>
   </main>
 
   <section class="done" id="done" hidden>
-    <h2>Runde geschafft</h2>
+    <h2 id="doneTitle">Runde geschafft</h2>
     <p class="big" id="doneTxt"></p>
     <div id="doneList"></div>
     <div class="btns">
       <button class="btn btn-no" id="againBtn" type="button">Nur diese nochmal üben</button>
       <button class="btn btn-main" id="nextBtn" type="button">Nächste Runde</button>
+      <button class="btn btn-ghost" id="extraBtn" type="button" hidden>Trotzdem weiter üben</button>
     </div>
   </section>
 </div>
@@ -182,6 +188,10 @@ pre.out{background:var(--term-bg);color:var(--term-fg)}
     <div class="sheet-head"><h2 id="sheetTitle">Kapitel wählen</h2><button class="close" id="closeSheet" type="button">Fertig</button></div>
     <p class="hint">Du lernst das Kapitel und wiederholst alle Kapitel davor.</p>
     <div class="klist" id="kapList"></div>
+    <div class="opt">
+      <span class="lbl">Neue Karten pro Tag</span>
+      <div class="seg" id="newSeg"></div>
+    </div>
     <div class="opt">
       <span class="lbl">Richtung</span>
       <div class="seg" id="dir"></div>
@@ -402,18 +412,34 @@ const KAPNAMES={
 };
 const CARDS=[];const TNAME={};
 const chOf=c=>c.ch||Math.min(...(String(c.src).match(/\d+/g)||["1"]).map(Number));
-TOPICS.forEach(tp=>{TNAME[tp.id]=tp.name;(DATA[tp.id]||[]).forEach(c=>{c.topic=tp.id;c.id=tp.id+"|"+(c.key||c.t);c.ch=chOf(c);CARDS.push(c)})});
+TOPICS.forEach((tp,ti)=>{TNAME[tp.id]=tp.name;(DATA[tp.id]||[]).forEach((c,i)=>{c.topic=tp.id;c.id=tp.id+"|"+(c.key||c.t);c.ch=chOf(c);c.ord=ti*1000+i;CARDS.push(c)})});
 const KAPS=[...new Set(CARDS.map(c=>c.ch))].sort((a,b)=>a-b);
 const byId=Object.fromEntries(CARDS.map(c=>[c.id,c]));
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
-const srcText=s=>String(s||"").split(",").map(p=>p.trim()).map(p=>p[0]==="V"?"Vorlesung "+p.slice(1):p[0]==="Ü"?"Übung "+p.slice(1):p).join(", ");
+
+/* ---------- Wiederholungsplan wie bei Anki (vereinfacht) ----------
+   Jede gelernte Karte hat eine Stufe s und ein Fälligkeitsdatum due (Tagesnummer).
+   Gewusst: eine Stufe hoch, Abstand wächst. Nicht gewusst: zurück auf Stufe 0 (morgen). */
+const INTERVALS=[1,3,7,14,30,60,120];
+const MAXS=INTERVALS.length-1;
+const today=()=>{const d=new Date();return Math.floor((d.getTime()-d.getTimezoneOffset()*60000)/86400000)};
 const KEY="py-befehle-v3";
-let S={box:{},size:10,dir:"py",max:0};
+let S={srs:{},box:{},size:10,dir:"py",max:0,newPerDay:10,newDay:{d:0,n:0}};
 try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(p&&typeof p==="object")S=Object.assign(S,p)}}catch(e){}
 if(!KAPS.includes(S.max))S.max=0;
+if(!S.srs||typeof S.srs!=="object")S.srs={};
+/* Alte Stufen (box) einmalig übernehmen: alles ist heute fällig */
+function migrateBox(box){Object.keys(box||{}).forEach(id=>{if(byId[id]&&!S.srs[id]&&box[id]>0)S.srs[id]={s:Math.max(0,box[id]-1),due:today()}})}
+migrateBox(S.box);S.box={};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}queueCloud()}
+
+const isNew=c=>!S.srs[c.id];
+const isDue=c=>!isNew(c)&&S.srs[c.id].due<=today();
+function lvl(c){const r=S.srs[c.id];if(!r)return 0;if(r.s===0)return 1;if(r.s<=2)return 2;return 3}
+function newLeft(){if(S.newDay.d!==today())S.newDay={d:today(),n:0};return Math.max(0,(S.newPerDay||10)-S.newDay.n)}
+const dayWord=n=>n===1?"morgen":n<30?"in "+n+" Tagen":n<60?"in 1 Monat":"in "+Math.round(n/30)+" Monaten";
 
 /* Speichern im Claude-Konto, falls die Seite dort läuft. Sonst nur im Gerät. */
 let cloudRef=null,cloudBusy=false,cloudDirty=false,cloudTimer=null;
@@ -421,7 +447,7 @@ function queueCloud(){if(!cloudRef)return;cloudDirty=true;clearTimeout(cloudTime
 async function flushCloud(){
   cloudTimer=null;if(!cloudRef||cloudBusy||!cloudDirty)return;
   cloudBusy=true;cloudDirty=false;
-  try{await cloudRef.set({box:S.box,max:S.max,size:S.size,dir:S.dir,updated:Date.now()})}
+  try{await cloudRef.set({srs:S.srs,max:S.max,dir:S.dir,newPerDay:S.newPerDay,newDay:S.newDay,updated:Date.now()})}
   catch(e){if(e&&e.code==="unavailable"){cloudDirty=true;setTimeout(flushCloud,1500+Math.random()*1500)}else cloudRef=null}
   finally{cloudBusy=false;if(cloudDirty&&!cloudTimer)cloudTimer=setTimeout(flushCloud,400)}
 }
@@ -432,42 +458,44 @@ async function initCloud(){
     if(!db||!user)return;const uid=await user.id();if(!uid)return;
     const ref=db.doc("data/users/"+uid+"/befehle");const snap=await ref.get();
     if(snap.exists){
-      const d=snap.data()||{};const before=S.max;
-      S.box=Object.assign({},S.box,d.box||{});["max","size","dir"].forEach(k=>{if(d[k]!==undefined)S[k]=d[k]});
+      const d=snap.data()||{};
+      if(d.srs)S.srs=Object.assign({},S.srs,d.srs);if(d.box)migrateBox(d.box);
+      ["max","dir","newPerDay"].forEach(k=>{if(d[k]!==undefined)S[k]=d[k]});
+      if(d.newDay&&d.newDay.d===today()&&d.newDay.n>S.newDay.n)S.newDay=d.newDay;
       if(!KAPS.includes(S.max))S.max=0;
       try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
-      renderHead();if(R&&R.done===0&&!flipped&&before!==S.max)startRound();
+      renderHead();if(R&&R.done===0&&!flipped)startRound();
       cloudRef=ref;
     }else{cloudRef=ref;cloudDirty=true;flushCloud()}
   }catch(e){}
 }
 addEventListener("pagehide",()=>{if(cloudDirty)flushCloud()});
 
-const lvl=c=>S.box[c.id]||0;
-const PRIO={1:0,0:1,2:2,3:3};
 const LV=["Neu","Üben","Fast sicher","Sicher"];
 const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
 const inKap=c=>!S.max||c.ch<=S.max;
 const pool=()=>CARDS.filter(inKap);
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const dueCards=()=>shuffle(pool().filter(isDue)).sort((a,b)=>S.srs[a.id].due-S.srs[b.id].due);
+const newCards=()=>pool().filter(isNew).sort((a,b)=>a.ch-b.ch||a.ord-b.ord);
 
 let R=null,flipped=false,busy=false;
 const cardEl=$("#card");
 
-/* Kopf: Kapitel und Fortschritt */
+/* Kopf: Kapitel, Fortschritt, heute */
 function renderHead(){
   const p=pool(),n=[0,0,0,0];p.forEach(c=>n[lvl(c)]++);
   const tot=p.length||1;
   $("#bar").innerHTML=[3,2,1,0].map(i=>`<span class="l${i}" style="width:${n[i]/tot*100}%"></span>`).join("");
   $("#legend").innerHTML=[0,1,2,3].map(i=>`<span><i class="dot l${i}"></i>${LV[i]} <b>${n[i]}</b></span>`).join("");
+  const due=p.filter(isDue).length,nl=Math.min(newLeft(),p.filter(isNew).length);
+  $("#today").innerHTML=`Heute: <b>${due}</b> wiederholen · <b>${nl}</b> neue`;
   if(S.max){
     $("#kapNum").textContent=S.max;
     $("#kapName").textContent="Kapitel "+S.max+": "+KAPNAMES[S.max][0];
     $("#kapSub").textContent=(S.max>1?"mit Wiederholung von Kapitel 1"+(S.max>2?" bis "+(S.max-1):"")+" · ":"")+p.length+" Karten";
   }else{
-    $("#kapNum").textContent="∑";
-    $("#kapName").textContent="Alle Kapitel";
-    $("#kapSub").textContent=p.length+" Karten";
+    $("#kapNum").textContent="∑";$("#kapName").textContent="Alle Kapitel";$("#kapSub").textContent=p.length+" Karten";
   }
 }
 
@@ -476,6 +504,7 @@ function renderSheet(){
   const own=k=>CARDS.filter(c=>c.ch===k).length;
   $("#kapList").innerHTML=KAPS.map(k=>`<button class="krow" type="button" data-k="${k}" aria-pressed="${S.max===k}"><span class="num">${k}</span><span class="kaptxt"><b>${esc(KAPNAMES[k][0])}</b><small>${esc(KAPNAMES[k][1])}</small></span><span class="kcount">${own(k)} Karten</span></button>`).join("")+
     `<button class="krow" type="button" data-k="0" aria-pressed="${!S.max}"><span class="num">∑</span><span class="kaptxt"><b>Alle Kapitel</b><small>alles gemischt</small></span><span class="kcount">${CARDS.length}</span></button>`;
+  $("#newSeg").innerHTML=[5,10,20].map(v=>`<button type="button" data-v="${v}" aria-pressed="${(S.newPerDay||10)===v}">${v}</button>`).join("");
   $("#dir").innerHTML=[["py","Python → Deutsch"],["de","Deutsch → Python"]].map(([v,l])=>`<button type="button" data-v="${v}" aria-pressed="${S.dir===v}">${l}</button>`).join("");
 }
 function openSheet(){renderSheet();$("#sheet").hidden=false;document.body.style.overflow="hidden";setTimeout(()=>$("#closeSheet").focus(),0)}
@@ -484,26 +513,31 @@ $("#kapBtn").addEventListener("click",openSheet);
 $("#closeSheet").addEventListener("click",closeSheet);
 $("#sheet").addEventListener("click",e=>{if(e.target.id==="sheet")closeSheet()});
 $("#kapList").addEventListener("click",e=>{const b=e.target.closest(".krow");if(!b)return;S.max=+b.dataset.k;save();renderHead();startRound();closeSheet()});
+$("#newSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.newPerDay=+b.dataset.v;save();renderSheet();renderHead();if(R&&R.done===0&&!flipped)startRound()});
 $("#dir").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.dir=b.dataset.v;save();renderSheet();if(R&&R.queue.length&&!$("#study").hidden)showCard()});
 
-/* Runde */
-function startRound(ids){
-  let list=ids?CARDS.filter(c=>ids.includes(c.id)):pool();
-  if(!list.length)list=CARDS.slice();
-  shuffle(list);
-  if(!ids){list.sort((a,b)=>PRIO[lvl(a)]-PRIO[lvl(b)]);list=list.slice(0,S.size||10);shuffle(list)}
-  R={queue:list.map(c=>c.id),total:list.length,done:0,failed:new Set(),firstRight:0};
+/* Runde: erst fällige Karten, dann neue (bis zum Tageslimit). Extra-Runde: freiwillig üben, ändert den Plan nur bei Fehlern. */
+function startRound(ids,extra){
+  let list;
+  if(ids)list=ids.map(id=>byId[id]);
+  else if(extra)list=shuffle(pool().filter(c=>!isNew(c))).sort((a,b)=>S.srs[a.id].s-S.srs[b.id].s).slice(0,10);
+  else list=dueCards().concat(newCards().slice(0,newLeft())).slice(0,S.size||10);
+  if(!ids&&!extra&&!list.length){finished();return}
+  if(!list.length){finished();return}
+  if(!ids)shuffle(list);
+  R={queue:list.map(c=>c.id),total:list.length,done:0,failed:new Set(),firstRight:0,extra:!!extra};
   $("#study").hidden=false;$("#done").hidden=true;
   showCard();
 }
 const head=(c,right)=>`<div class="kk-head"><span>${esc(TNAME[c.topic])}</span><span>${right}</span></div>`;
+const tag=c=>isNew(c)?"Neu · Kapitel "+c.ch:"Kapitel "+c.ch;
 function frontHTML(c){
-  if(S.dir==="py")return head(c,"Kapitel "+c.ch)+`<div class="body"><span class="term">${esc(c.t)}</span><p class="prompt">Was heißt das? Was macht es?</p></div>`;
-  return head(c,"Kapitel "+c.ch)+`<div class="body"><p class="de-big">${esc(c.de)}</p><p class="what-front">${esc(c.w)}</p><p class="prompt">Wie schreibt man das in Python?</p></div>`;
+  if(S.dir==="py")return head(c,tag(c))+`<div class="body"><span class="term">${esc(c.t)}</span><p class="prompt">Was heißt das? Was macht es?</p></div>`;
+  return head(c,tag(c))+`<div class="body"><p class="de-big">${esc(c.de)}</p><p class="what-front">${esc(c.w)}</p><p class="prompt">Wie schreibt man das in Python?</p></div>`;
 }
 const hlColon=s=>esc(s).replace(/:[ \t]*$/gm,'<b class="colon">:</b>');
 function backHTML(c){
-  let h=head(c,"Kapitel "+c.ch)+`<div class="body"><div class="head-term">${esc(c.t)}</div>`;
+  let h=head(c,tag(c))+`<div class="body"><div class="head-term">${esc(c.t)}</div>`;
   if(c.en&&c.en.toLowerCase()!==c.de.toLowerCase())h+=`<div class="row"><span class="lbl">Englisch heißt das</span><p class="en">${esc(c.en)}</p></div>`;
   h+=`<div class="row"><span class="lbl">In Python</span><p class="de">${esc(c.de)}</p></div>`;
   h+=`<div class="row"><span class="lbl">Was macht es?</span><p>${esc(c.w)}</p></div>`;
@@ -513,10 +547,20 @@ function backHTML(c){
   if(c.err)h+=`<div class="err"><span class="lbl">Typischer Fehler</span><p>${esc(c.err)}</p></div>`;
   return h+`</div>`;
 }
-function setActions(){$("#flipBtn").hidden=flipped;$("#noBtn").hidden=!flipped;$("#yesBtn").hidden=!flipped}
+/* Nächster Abstand, wenn "Gewusst" getippt wird */
+function nextStep(c){
+  if(R.failed.has(c.id))return 0;
+  const r=S.srs[c.id];
+  if(R.extra)return r?r.s:0;
+  return r?Math.min(MAXS,r.s+1):0;
+}
+function setActions(){
+  $("#flipBtn").hidden=flipped;$("#noBtn").hidden=!flipped;$("#yesBtn").hidden=!flipped;
+  if(flipped){const c=byId[R.queue[0]];$("#yesSub").textContent="wieder "+dayWord(INTERVALS[nextStep(c)]);$("#noSub").textContent="gleich nochmal"}
+}
 function renderProgress(){
   const c=byId[R.queue[0]];
-  $("#progTxt").textContent=`${R.done} von ${R.total} geschafft`;
+  $("#progTxt").textContent=(R.extra?"Extra-Runde · ":"")+`${R.done} von ${R.total} geschafft`;
   $("#progTopic").textContent=c&&R.failed.has(c.id)?"kommt nochmal":"";
   $("#pfill").style.width=(R.done/R.total*100)+"%";
 }
@@ -532,24 +576,46 @@ function flip(){
 }
 function rate(known){
   if(!flipped||busy)return;
-  const id=R.queue.shift();
-  if(known){if(!R.failed.has(id)){S.box[id]=Math.min(3,Math.max(2,(S.box[id]||0)+1));R.firstRight++}R.done++}
-  else{R.failed.add(id);S.box[id]=1;R.queue.splice(Math.min(3,R.queue.length),0,id)}
+  const id=R.queue.shift(),c=byId[id],t=today();
+  if(isNew(c)){if(S.newDay.d!==t)S.newDay={d:t,n:0};S.newDay.n++}
+  if(known){
+    const s=nextStep(c);
+    if(!R.extra||R.failed.has(id))S.srs[id]={s,due:t+INTERVALS[s]};
+    if(!R.failed.has(id))R.firstRight++;
+    R.done++;
+  }else{
+    S.srs[id]={s:0,due:t+1};
+    R.failed.add(id);R.queue.splice(Math.min(3,R.queue.length),0,id);
+  }
   save();renderHead();
   if(!R.queue.length){summary();return}
   showCard();cardEl.focus({preventScroll:true});
   if(cardEl.getBoundingClientRect().top<0)cardEl.scrollIntoView({block:"start",behavior:reduce?"auto":"smooth"});
 }
+function moreToday(){return pool().some(isDue)||(newLeft()>0&&pool().some(isNew))}
+function tomorrowCount(){const t=today()+1;return pool().filter(c=>!isNew(c)&&S.srs[c.id].due<=t).length}
 function summary(){
   $("#study").hidden=true;$("#done").hidden=false;
-  $("#doneTxt").innerHTML=`Beim ersten Versuch gewusst: <b>${R.firstRight} von ${R.total}</b>`;
+  const more=moreToday();
+  $("#doneTitle").textContent=more?"Runde geschafft":"Für heute geschafft";
+  $("#doneTxt").innerHTML=`Beim ersten Versuch gewusst: <b>${R.firstRight} von ${R.total}</b>`+(more?"":`<br>Morgen sind <b>${tomorrowCount()}</b> Karten fällig.`);
   const f=[...R.failed].map(id=>byId[id]);
-  $("#doneList").innerHTML=f.length?`<span class="lbl">Nochmal üben</span><ul class="again">${f.map(c=>`<li><code>${esc(c.t)}</code><span>${esc(c.de)}</span></li>`).join("")}</ul>`:`<p style="margin:0">Alles beim ersten Versuch gewusst. Stark!</p>`;
+  $("#doneList").innerHTML=f.length?`<span class="lbl">Nochmal üben</span><ul class="again">${f.map(c=>`<li><code>${esc(c.t)}</code><span>${esc(c.de)}</span></li>`).join("")}</ul>`:"";
   $("#againBtn").hidden=!f.length;
+  $("#nextBtn").hidden=!more;
+  $("#extraBtn").hidden=more||!pool().some(c=>!isNew(c));
   window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});
 }
-$("#againBtn").addEventListener("click",()=>startRound([...R.failed]));
+function finished(){
+  $("#study").hidden=true;$("#done").hidden=false;
+  $("#doneTitle").textContent="Für heute geschafft";
+  $("#doneTxt").innerHTML=`Heute ist nichts mehr fällig. Morgen sind <b>${tomorrowCount()}</b> Karten dran.`;
+  $("#doneList").innerHTML="";$("#againBtn").hidden=true;$("#nextBtn").hidden=true;
+  $("#extraBtn").hidden=!pool().some(c=>!isNew(c));
+}
+$("#againBtn").addEventListener("click",()=>startRound([...R.failed],true));
 $("#nextBtn").addEventListener("click",()=>startRound());
+$("#extraBtn").addEventListener("click",()=>startRound(null,true));
 cardEl.addEventListener("click",flip);
 $("#flipBtn").addEventListener("click",flip);
 $("#noBtn").addEventListener("click",()=>rate(false));
@@ -561,17 +627,19 @@ document.addEventListener("keydown",e=>{
   if(flipped&&(e.key==="1"||e.key==="ArrowLeft"))rate(false);
   if(flipped&&(e.key==="2"||e.key==="ArrowRight"))rate(true);
 });
+/* Neuer Tag, während die App offen ist */
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){renderHead();if(!$("#done").hidden&&moreToday())startRound()}});
 
 /* Zurücksetzen mit Bestätigung auf der Seite */
 let resetArmed=null;
 $("#resetBtn").addEventListener("click",e=>{
   const b=e.currentTarget;
   if(!resetArmed){b.textContent="Wirklich löschen? Nochmal tippen";b.classList.add("warn");resetArmed=setTimeout(()=>{resetArmed=null;b.textContent="Fortschritt löschen";b.classList.remove("warn")},4000);return}
-  clearTimeout(resetArmed);resetArmed=null;S.box={};save();b.textContent="Gelöscht";b.classList.remove("warn");
+  clearTimeout(resetArmed);resetArmed=null;S.srs={};S.newDay={d:today(),n:0};save();b.textContent="Gelöscht";b.classList.remove("warn");
   setTimeout(()=>{b.textContent="Fortschritt löschen"},2000);renderHead();startRound();
 });
 
-renderHead();startRound();initCloud();
+save();renderHead();startRound();initCloud();
 </script>
 <script>
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})})}
